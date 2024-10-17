@@ -19,8 +19,22 @@ STARTING_POSITIONS = [
     (SCREEN_WIDTH - DISTANCE_BORDER - 400, DISTANCE_BORDER)  
 ]
 TREASURE_COUNT = 24
-STATIC_CORDS = [(0, 0),(0, 6), (6, 0), (6, 6)]
-TILE_TEXTURES = ["kartalabvzor1.png", "kartalabvzor2.png", "kartalabvzor3.png"]
+STATIC_CORDS = [(0, 0), (0, 2), (0, 4), (0, 6),
+                (2, 0), (2, 2), (2, 4), (2, 6),
+                (4, 0), (4, 2), (4, 4), (4, 6),
+                (6, 0), (6, 2), (6, 4), (6, 6)
+                ]                               # SOUŘADNICE NEPOHYBLIVÝCH DÍLŮ
+STATIC_ANGLES = [90,0,0,180,
+                270,0,90,90,
+                270,270,180,90,
+                0,180,180,270
+                ]
+STATIC_TEXTURES = ["labkarta_0red.png", "labkarta_s2.png", "labkarta_s3.png", "labkarta_0yellow.png",
+                "labkarta_s5.png", "labkarta_s6.png", "labkarta_s7.png", "labkarta_s8.png",
+                "labkarta_s9.png", "labkarta_s10.png", "labkarta_s11.png", "labkarta_s12.png",
+                "labkarta_0blue.png", "labkarta_s14.png", "labkarta_s15.png", "labkarta_0green.png"
+                ]
+TEXTURES_CURVE = ["kartalabvzor1.png", "labkarta_0red.png", "labkarta_0blue.png", "labkarta_0yellow.png", "labkarta_0green.png", "labkarta7.png", "labkarta8.png", "labkarta9.png", "labkarta10.png", "labkarta11.png", "labkarta12.png" ]
 PLAYER_IMAGES = ["player_red.png","player_blue.png","player_green.png","player_yellow.png"]
  
 class TextButton():
@@ -56,6 +70,16 @@ class MyGame(arcade.Window):
         self.tile_positions = {}
         self.button_list = []
 
+        # Generate the tile textures with desired frequencies
+        self.tile_textures = (
+            ["kartalabvzor1.png"] * 10 +
+            ["kartalabvzor2.png"] * 12 +
+            ["labkarta1.png","labkarta2.png","labkarta3.png","labkarta4.png","labkarta5.png","labkarta6.png","labkarta7.png","labkarta8.png","labkarta9.png","labkarta10.png","labkarta11.png","labkarta12.png"]  # Add more if needed
+        )
+
+        # Shuffle the list to randomize texture selection order
+        random.shuffle(self.tile_textures)
+
         # Načtení hráče
         self.player_colors = [arcade.color.RED, arcade.color.BLUE, arcade.color.GREEN, arcade.color.YELLOW]
         self.player_color_names = {
@@ -71,32 +95,39 @@ class MyGame(arcade.Window):
         
         # Herní deska
         self.first_shift = True
-        corner_angles = [90,180,0,270]
 
         for row in range(GRID_SIZE):    # Pro každý díl z plánu
             for col in range(GRID_SIZE):    
                 center_x = DISTANCE_BORDER + col * TILE_SIZE        #střed dílu = vzdálenost od hrany + číslo sloupce * velikost dílu (150+1*100 = 250)
                 center_y = DISTANCE_BORDER + row * TILE_SIZE
-                texture = random.choice(TILE_TEXTURES)              #random volba z textur - rovna, zatacka,...
-                tile = arcade.Sprite(texture, 1)
+
+                tile = arcade.Sprite(None, 1)
                 tile.center_x = center_x
                 tile.center_y = center_y
-                
-                if (row, col) in STATIC_CORDS:                      
-                    # Pokud je statická, přiřaď následující vlastnosti
-                    texture = "kartalabvzor1.png"
+            
+                if (row, col) in STATIC_CORDS:
+                    index = STATIC_CORDS.index((row, col))
+                    print(index)
+                    texture = STATIC_TEXTURES[index]
+                    angle = STATIC_ANGLES[index]
+
+                    # Load texture and set angle
                     tile.texture = arcade.load_texture(texture)
-                    angle = corner_angles[STATIC_CORDS.index((row, col))]
                     tile.angle = angle
+                    
                 else:
+                    texture = self.tile_textures.pop()  # Get and remove the last element from the list
+                    tile.texture = arcade.load_texture(texture)
                     tile.angle = random.randint(0, 3) * 90
                 
+                tile.my_texture_name = texture
+
                 # Stanovení vlastností podle textury a úhlu
                 move_right = move_left = move_down = move_up = False            #základní pohybové vlastnosti karet
 
-                if texture == "kartalabvzor1.png":      # Zatáčka
+                if texture in TEXTURES_CURVE:      # Zatáčka
                     name = "curve"
-                    tile.texture.name = "kartalabvzor1.png"
+                    tile.my_texture_name = "kartalabvzor1.png"
                     if tile.angle == 0:
                         move_right = True
                         move_down = True
@@ -112,16 +143,16 @@ class MyGame(arcade.Window):
                 
                 elif texture == "kartalabvzor2.png":    # Rovná
                     name = "straight"
-                    tile.texture.name = "kartalabvzor2.png"
+                    tile.my_texture_name = "kartalabvzor2.png"
                     if tile.angle in [0, 180]:
                         move_right = True
                         move_left = True
                     elif tile.angle in [90, 270]:
                         move_down = True
                         move_up = True
-                elif texture == "kartalabvzor3.png":    # Křižovatka
+                else:#elif texture == "kartalabvzor3.png":    # Křižovatka
                     name = "t-junction"
-                    tile.texture.name = "kartalabvzor3.png"
+                    tile.my_texture_name = "kartalabvzor3.png"
                     if tile.angle == 0:
                         move_left = True
                         move_right = True
@@ -163,13 +194,13 @@ class MyGame(arcade.Window):
         tile.angle += 90
         if tile.angle > 270:
             tile.angle = 0
-
-        # Update the texture based on the new angle
-        texture = tile.texture.name  # Assuming texture.name holds the filename
+        
+        texture = tile.my_texture_name
+        print(texture)
         move_right = move_left = move_down = move_up = False
 
         # Determine movement options based on texture and angle
-        if texture == "kartalabvzor1.png":  # Curve
+        if texture in TEXTURES_CURVE:  # Curve
             name = "curve"
             if tile.angle == 0:
                 move_right = True
@@ -193,7 +224,7 @@ class MyGame(arcade.Window):
                 move_down = True
                 move_up = True
 
-        elif texture == "kartalabvzor3.png":  # T-junction
+        else: #elif texture == "kartalabvzor3.png":  # T-junction
             name = "t-junction"
             if tile.angle == 0:
                 move_left = move_right = move_up = True
@@ -213,10 +244,11 @@ class MyGame(arcade.Window):
             'move_up': move_up,
             'move_left': move_left
         }
+        
         return tile
 
     def create_extra_tile(self):
-        texture = random.choice(["kartalabvzor1.png", "kartalabvzor2.png"])
+        texture = self.tile_textures.pop()
         angle = random.choice([0, 90, 180, 270])
 
         # Create the sprite for the extra tile
@@ -228,8 +260,9 @@ class MyGame(arcade.Window):
         # Přiřazení vlastností
         move_right = move_left = move_down = move_up = False
 
-        if texture == "kartalabvzor1.png":  # Curve
+        if texture in TEXTURES_CURVE:  # Curve
             name = "curve"
+            extra_tile.my_texture_name = "kartalabvzor1.png"
             if angle == 0:
                 move_right = True
                 move_down = True
@@ -244,12 +277,34 @@ class MyGame(arcade.Window):
                 move_left = True
         elif texture == "kartalabvzor2.png":  # Straight
             name = "straight"
+            extra_tile.my_texture_name = "kartalabvzor2.png"
             if angle in [0, 180]:
                 move_right = True
                 move_left = True
             elif angle in [90, 270]:
                 move_down = True
                 move_up = True
+
+        else:#elif texture == "kartalabvzor3.png":    # Křižovatka
+            name = "t-junction"
+            extra_tile.my_texture_name = "kartalabvzor3.png"
+            if angle == 0:
+                move_left = True
+                move_right = True
+                move_up = True
+            elif angle == 90:
+                move_left = True
+                move_down = True
+                move_up = True
+            elif angle == 180:
+                move_left = True
+                move_right = True
+                move_down = True
+            elif angle == 270:
+                move_right = True
+                move_up = True
+                move_down = True
+        
         
         # Add the sprite to the tile_list
         self.tile_list.append(extra_tile)
@@ -306,120 +361,151 @@ class MyGame(arcade.Window):
             
     def shift_row_right(self, row_index):           
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Zkopírování vlastností pozice extra
+        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Copy extra tile properties
 
-        pushed_out_tile_properties = self.tile_positions[(0, row_index)].copy()  # Zkopírování vlastností pozice (T1) vysunuté
-        pushed_out_texture = self.tile_list[row_index * GRID_SIZE].texture  #Zkopírování textury vysunuté
-        pushed_out_angle = self.tile_list[row_index * GRID_SIZE].angle      #Zkopírování úhlu vysunuté
-        
-        # Hýbání každého spritu a každé vlastnosti každého dílu z řádku (row_index), musím začít vlevo, abych nepřepsal
+        # Copy properties of the pushed out tile (leftmost tile)
+        pushed_out_tile_properties = self.tile_positions[(0, row_index)].copy()
+        pushed_out_texture = self.tile_list[row_index * GRID_SIZE].texture
+        pushed_out_angle = self.tile_list[row_index * GRID_SIZE].angle
+        pushed_out_texture_name = self.tile_list[row_index * GRID_SIZE].my_texture_name
+
+        # Shift all tiles to the right
         for col in range(GRID_SIZE):
             current_position = (col, row_index)
             right_position = (col + 1, row_index)
 
-            if right_position in self.tile_positions:  # Pokud pozice vpravo od dílku je v 7*7
-                # Zkopírování vlastností a textury s úhlem z pravé na aktuální
+            if right_position in self.tile_positions:  # If right position is within grid bounds
+                # Copy the properties from the right to the current position
                 self.tile_positions[current_position] = self.tile_positions[right_position]
 
                 self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[col + 1 + row_index * GRID_SIZE].texture
                 self.tile_list[col + row_index * GRID_SIZE].angle = self.tile_list[col + 1 + row_index * GRID_SIZE].angle
-            else:  
-                # Jinak (pokud jsem mimo grid) přiřaď hodnoty extra_tile
+                self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[col + 1 + row_index * GRID_SIZE].my_texture_name
+            else:
+                # Otherwise assign extra tile properties to the current position
                 self.tile_positions[current_position] = extra_tile_properties
-                self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[-1].texture        #[-1] poslední item z listu = extra
-                self.tile_list[col + row_index * GRID_SIZE].angle = extra_tile_properties["angle"]  
 
-        # Nakonec nastavení hodnot pro vysunutou ze zkopírovaných vlastností vysunuté (T1)
-        self.tile_positions[(10, 10)] = pushed_out_tile_properties 
+                self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[-1].texture
+                self.tile_list[col + row_index * GRID_SIZE].angle = extra_tile_properties["angle"]
+                self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[-1].my_texture_name
+
+        # Assign pushed out tile properties to the extra tile
+        self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
+        self.tile_list[-1].my_texture_name = pushed_out_texture_name
+
 
     def shift_row_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Zkopírování vlastností pozice extra
+        extra_tile_properties = self.tile_positions[(10, 10)].copy()
 
-        pushed_out_tile_properties = self.tile_positions[(6, row_index)].copy()  # Zkopírování vlastností pozice (T7) vysunuté, 6 = poslední sloupec
-        pushed_out_texture = self.tile_list[6 + row_index * GRID_SIZE].texture  #Zkopírování textury vysunuté
-        pushed_out_angle = self.tile_list[6 + row_index * GRID_SIZE].angle      #Zkopírování úhlu vysunuté
+        # Copy properties of the pushed out tile (rightmost tile)
+        pushed_out_tile_properties = self.tile_positions[(6, row_index)].copy()
+        pushed_out_texture = self.tile_list[6 + row_index * GRID_SIZE].texture
+        pushed_out_angle = self.tile_list[6 + row_index * GRID_SIZE].angle
+        pushed_out_texture_name = self.tile_list[6 + row_index * GRID_SIZE].my_texture_name
 
-        # Hýbání každého spritu a každé vlastnosti každého dílu z řádku (row_index), musím začít vpravo, abych nepřepsal
-        for col in range(6, -1, -1): #Začnu 6 a jdu dolu (6 = počátek, -1 = konec(bez -1), -1 = o kolik popojít při každém kole)
+        # Shift all tiles to the left
+        for col in range(6, -1, -1):  # Start from rightmost column
             current_position = (col, row_index)
-            left_position = (col -1, row_index)
+            left_position = (col - 1, row_index)
 
             if left_position in self.tile_positions:
-                # Zkopírování vlastností a textury s úhlem z levé na aktuální
+                # Copy the properties from the left to the current position
                 self.tile_positions[current_position] = self.tile_positions[left_position]
 
-                self.tile_list[col +  row_index * GRID_SIZE].texture = self.tile_list[col - 1 + row_index * GRID_SIZE].texture
-                self.tile_list[col +  row_index * GRID_SIZE].angle = self.tile_list[col - 1 + row_index * GRID_SIZE].angle
-            
+                self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[col - 1 + row_index * GRID_SIZE].texture
+                self.tile_list[col + row_index * GRID_SIZE].angle = self.tile_list[col - 1 + row_index * GRID_SIZE].angle
+                self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[col - 1 + row_index * GRID_SIZE].my_texture_name
             else:
-                # Vlevo nic není
+                # Assign extra tile properties to the current position
                 self.tile_positions[current_position] = extra_tile_properties
 
-                self.tile_list[col +  row_index * GRID_SIZE].texture = self.tile_list[-1].texture
-                self.tile_list[col +  row_index * GRID_SIZE].angle = extra_tile_properties["angle"]
-        
-        self.tile_positions[(10, 10)] = pushed_out_tile_properties 
+                self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[-1].texture
+                self.tile_list[col + row_index * GRID_SIZE].angle = extra_tile_properties["angle"]
+                self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[-1].my_texture_name
+
+        # Assign pushed out tile properties to the extra tile
+        self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
+        self.tile_list[-1].my_texture_name = pushed_out_texture_name
+
 
     def shift_column_up(self, col_index):           
         """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6]  """
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Zkopírování vlastností pozice extra
+        extra_tile_properties = self.tile_positions[(10, 10)].copy()
 
-        pushed_out_tile_properties = self.tile_positions[(col_index, 0)].copy()  # Zkopírování vlastností pozice (T7) vysunuté (sloupec, řádek 0)
-        pushed_out_texture = self.tile_list[col_index].texture  # Zkopírování textury vysunuté
-        pushed_out_angle = self.tile_list[col_index].angle      # Zkopírování úhlu vysunuté
+        # Copy properties of the pushed out tile (bottommost tile)
+        pushed_out_tile_properties = self.tile_positions[(col_index, 0)].copy()
+        pushed_out_texture = self.tile_list[col_index].texture
+        pushed_out_angle = self.tile_list[col_index].angle
+        pushed_out_texture_name = self.tile_list[col_index].my_texture_name
 
-        # Hýbání každého spritu a každé vlastnosti každého dílu ze sloupce (col_index), začínám dole, abych nepřepsal
+        # Shift all tiles upwards
         for row in range(GRID_SIZE):
             current_position = (col_index, row)
             above_position = (col_index, row + 1)
 
             if above_position in self.tile_positions:
+                # Copy the properties from the above tile
                 self.tile_positions[current_position] = self.tile_positions[above_position]
+
                 self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[(row + 1) * GRID_SIZE + col_index].texture
                 self.tile_list[row * GRID_SIZE + col_index].angle = self.tile_list[(row + 1) * GRID_SIZE + col_index].angle
-            
+                self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[(row + 1) * GRID_SIZE + col_index].my_texture_name
             else:
+                # Assign extra tile properties
                 self.tile_positions[current_position] = extra_tile_properties
-                self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[-1].texture
-                self.tile_list[row * GRID_SIZE + col_index].angle = extra_tile_properties["angle"]               
 
-        # nastavení hodnot extra na zkopírované vlastnosti vysunuté
+                self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[-1].texture
+                self.tile_list[row * GRID_SIZE + col_index].angle = extra_tile_properties["angle"]
+                self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[-1].my_texture_name
+
+        # Assign pushed out tile properties to the extra tile
         self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
-        self.tile_list[-1].angle = pushed_out_angle      
+        self.tile_list[-1].angle = pushed_out_angle
+        self.tile_list[-1].my_texture_name = pushed_out_texture_name
+     
 
     def shift_column_down(self, col_index):           
-        """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Zkopírování vlastností pozice extra
+        """Šoupání zespoda, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
+        extra_tile_properties = self.tile_positions[(10, 10)].copy()
 
-        pushed_out_tile_properties = self.tile_positions[(col_index, 6)].copy()  # Zkopírování vlastností pozice (T1) vysunuté (sloupec, řádek 6)
-        pushed_out_texture = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].texture  # Zkopírování textury vysunuté, (sloupec 2 → 1 + 6*7 = 43)
-        pushed_out_angle = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].angle      # Zkopírování úhlu vysunuté
+        # Copy properties of the pushed out tile (topmost tile)
+        pushed_out_tile_properties = self.tile_positions[(col_index, 6)].copy()
+        pushed_out_texture = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].texture
+        pushed_out_angle = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].angle
+        pushed_out_texture_name = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].my_texture_name
 
-        # Hýbání každého spritu a každé vlastnosti každého dílu ze sloupce (col_index), začínám nahoře, abych nepřepsal
-        for row in range(6, -1, -1):  # Začnu 6 a jdu dolu (6 = počátek, -1 = konec(bez -1), -1 = o kolik popojít při každém kole)
+        # Shift all tiles downwards
+        for row in range(6, -1, -1):
             current_position = (col_index, row)
             below_position = (col_index, row - 1)
 
             if below_position in self.tile_positions:
+                # Copy the properties from the below tile
                 self.tile_positions[current_position] = self.tile_positions[below_position]
-                self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[(row - 1) * GRID_SIZE + col_index].texture     #aktuální pozice (4,3) → 3*7 + 4 = 25 dostane vlastnosti (4,2) = 2*7 + 4 = 18
+
+                self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[(row - 1) * GRID_SIZE + col_index].texture
                 self.tile_list[row * GRID_SIZE + col_index].angle = self.tile_list[(row - 1) * GRID_SIZE + col_index].angle
-
+                self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[(row - 1) * GRID_SIZE + col_index].my_texture_name
             else:
-                self.tile_positions[(col_index, 0)] = extra_tile_properties
-                self.tile_list[col_index].texture = self.tile_list[-1].texture  
-                self.tile_list[col_index].angle = extra_tile_properties["angle"]
+                # Assign extra tile properties
+                self.tile_positions[current_position] = extra_tile_properties
 
-        # Nastavení hodnot extra na zkopírované vlastnosti vysunuté
+                self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[-1].texture
+                self.tile_list[row * GRID_SIZE + col_index].angle = extra_tile_properties["angle"]
+                self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[-1].my_texture_name
+
+        # Assign pushed out tile properties to the extra tile
         self.tile_positions[(10, 10)] = pushed_out_tile_properties
-        self.tile_list[-1].texture = pushed_out_texture  
-        self.tile_list[-1].angle = pushed_out_angle   
+        self.tile_list[-1].texture = pushed_out_texture
+        self.tile_list[-1].angle = pushed_out_angle
+        self.tile_list[-1].my_texture_name = pushed_out_texture_name
+
 
     def on_draw(self):
         arcade.start_render()
