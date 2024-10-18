@@ -67,6 +67,8 @@ class MyGame(arcade.Window):
         self.tile_list = arcade.SpriteList()
         self.players = []
         self.active_player_index = 0
+        self.has_shifted = False
+        self.last_shift = None
         self.tile_positions = {}
         self.button_list = []
 
@@ -91,6 +93,7 @@ class MyGame(arcade.Window):
         for i in range(4):
             player_sprite = arcade.Sprite(PLAYER_IMAGES[i],0.95)
             player_sprite.center_x, player_sprite.center_y = STARTING_POSITIONS[i] 
+            player_sprite.alpha = 255 # Průhlednost (100%)
             self.players.append(player_sprite)
         
         # Herní deska
@@ -318,9 +321,6 @@ class MyGame(arcade.Window):
             'move_left': move_left
             }
 
-
-
-
     def setup(self):
         # Tlačítko na otočení extra karty
         button = TextButton(SCREEN_WIDTH - DISTANCE_BORDER, SCREEN_HEIGHT - 1.5*DISTANCE_BORDER, 100,25,"Rotate", self.on_button_click)
@@ -350,7 +350,27 @@ class MyGame(arcade.Window):
         grid_y = int((player.center_y - DISTANCE_BORDER) // TILE_SIZE)
         return grid_x, grid_y
 
+    def update_player_opacity(self):
+        """Zprůhlednění neaktivních hráčů, aby bylo vidět, na čem stojí"""
+        for i, player in enumerate(self.players):
+            if i == self.active_player_index:
+                player.alpha = 255  # Neprůhledné
+            else:
+                player.alpha = 170  # Cca napůl průhledné
+
     def shift_grid(self, entity, index, direction): #entity = row/column; index číslo řádku/sloupce, direction up/down/left/right
+        if self.last_shift:     # Pokud to není první
+            last_entity, last_index, last_direction = self.last_shift
+
+            # Zabránění hráči aby táhl proti předchozímu tahu
+            if entity == last_entity and index == last_index: #pokud je to row a row, 2 a 2
+                if (last_direction == 'right' and direction == 'left') or (last_direction == 'left' and direction == 'right'): # pokud je směr doprava a doleva nebo obráceně
+                    print(f"Cannot shift {entity} {index} to the {direction}, it was just shifted to the {last_direction}.")
+                    return
+                if (last_direction == 'up' and direction == 'down') or (last_direction == 'down' and direction == 'up'):        # pokud je směr nahoru a dolů nebo obráceně
+                    print(f"Cannot shift {entity} {index} to the {direction}, it was just shifted to the {last_direction}.")
+                    return
+
         if entity == 'row':
             """Aktualizace při pohybu s řadou"""
             row = index - 1 #Odečtení kvůli indexování (souřadnice (2,2) v py == (1,1)...)
@@ -406,6 +426,9 @@ class MyGame(arcade.Window):
                 else:
                     # Optional: You can handle any other logic if the player isn't on the shifted column
                     pass
+        
+        self.last_shift = (entity, index, direction) # Uložení čím se hýbalo pro dalšího hráče
+        self.has_shifted = True
             
     def shift_row_right(self, row_index):           
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
@@ -443,7 +466,6 @@ class MyGame(arcade.Window):
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
 
-
     def shift_row_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
         extra_tile_properties = self.tile_positions[(10, 10)].copy()
@@ -479,7 +501,6 @@ class MyGame(arcade.Window):
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
-
 
     def shift_column_up(self, col_index):           
         """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6]  """
@@ -517,7 +538,6 @@ class MyGame(arcade.Window):
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
      
-
     def shift_column_down(self, col_index):           
         """Šoupání zespoda, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
         extra_tile_properties = self.tile_positions[(10, 10)].copy()
@@ -562,7 +582,6 @@ class MyGame(arcade.Window):
             button.draw()
 
         # Vykreslení hráčů na obrazovku
-        #self.players[self.active_player_index].draw()
         for player in self.players:
             player.draw()
         
@@ -611,63 +630,55 @@ class MyGame(arcade.Window):
     def on_key_press(self, key, modifiers):
         active_player = self.players[self.active_player_index]
         tile_under_player = self.get_tile_under_player(active_player)
+        
+        if self.has_shifted:
+            if key == arcade.key.UP:
+                if tile_under_player and tile_under_player["move_up"]:
+                    grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+                    grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'up')
+                    if adjacent_tile and adjacent_tile["move_down"]:
+                        active_player.center_y += MOVEMENT_SPEED
+                else:
+                    print("Cannot move up")
+                
+            elif key == arcade.key.DOWN:
+                if tile_under_player and tile_under_player["move_down"]:
+                    grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+                    grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'down')
+                    if adjacent_tile and adjacent_tile["move_up"]:
+                        active_player.center_y -= MOVEMENT_SPEED
+                else:
+                    print("Cannot move down")
+            elif key == arcade.key.LEFT:
+                if tile_under_player and tile_under_player["move_left"]:
+                    grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+                    grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'left')
+                    if adjacent_tile and adjacent_tile["move_right"]:
+                        active_player.center_x -= MOVEMENT_SPEED
+                else:
+                    print("Cannot move left")
 
-        if key == arcade.key.UP:
-            if tile_under_player and tile_under_player["move_up"]:
-                grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
-                grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'up')
-                if adjacent_tile and adjacent_tile["move_down"]:
-                    active_player.center_y += MOVEMENT_SPEED
-            else:
-                print("Cannot move up")
-            
-        elif key == arcade.key.DOWN:
-            if tile_under_player and tile_under_player["move_down"]:
-                grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
-                grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'down')
-                if adjacent_tile and adjacent_tile["move_up"]:
-                    active_player.center_y -= MOVEMENT_SPEED
-            else:
-                print("Cannot move down")
-        elif key == arcade.key.LEFT:
-            if tile_under_player and tile_under_player["move_left"]:
-                grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
-                grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'left')
-                if adjacent_tile and adjacent_tile["move_right"]:
-                    active_player.center_x -= MOVEMENT_SPEED
-            else:
-                print("Cannot move left")
+            elif key == arcade.key.RIGHT:
+                if tile_under_player and tile_under_player["move_right"]:
+                    grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+                    grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'right')
+                    if adjacent_tile and adjacent_tile["move_left"]:
+                        active_player.center_x += MOVEMENT_SPEED
+                else:
+                    print("Cannot move right")  
+            elif key == arcade.key.ENTER:
+                # Konec kola
+                self.has_shifted = False
+                self.active_player_index = (self.active_player_index + 1) % len(self.players) 
+                self.update_player_opacity()
 
-        elif key == arcade.key.RIGHT:
-            if tile_under_player and tile_under_player["move_right"]:
-                grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
-                grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'right')
-                if adjacent_tile and adjacent_tile["move_left"]:
-                    active_player.center_x += MOVEMENT_SPEED
-            else:
-                print("Cannot move right")  
-
-        elif key == arcade.key.P:
-            tile_info = self.tile_positions.get((6, 1), None)
-            tile_info1 = self.tile_positions.get((0, 1), None)
-            tile_info2 = self.tile_positions.get((10, 10), None)
-            if tile_info:
-                print(f"2. ŘADA POSLEDNÍ: ", end="")
-                pprint.pprint(tile_info)
-                print(f"2. ŘADA PRVNÍ: ", end="")
-                pprint.pprint(tile_info1)                           
-                print(f"EXTRA: ", end="")
-                pprint.pprint(tile_info2)
-
-        elif key == arcade.key.ENTER:
-            # Switch to the next player
-            self.active_player_index = (self.active_player_index + 1) % len(self.players) 
-        print(tile_under_player)
-
+                print(tile_under_player)
+        else:
+            print("Player must shift first")
 
     def on_key_release(self, key, modifiers):
         """ Called whenever the user releases a key. """
@@ -676,35 +687,39 @@ class MyGame(arcade.Window):
     def on_button_click(self, button_label, x, y):
         if button_label == "Rotate":
             self.transform_tile(self.tile_list[-1])
+            return  # prevence aby program nepokračoval ve fci (nenastavil has_shifted na true)
 
-        if button_label == "←":
-            if y in range (225,275):
-                self.shift_grid("row", 2, "right")
-            elif y in range (425,475):
-                self.shift_grid("row", 4, "right")
-            elif y in range (625,675):
-                self.shift_grid("row", 6, "right")
-        elif button_label == "→":
-            if y in range (225,275):
-                self.shift_grid("row", 2, "left")
-            elif y in range (425,475):
-                self.shift_grid("row", 4, "left")
-            elif y in range (625,675):
-                self.shift_grid("row", 6, "left")
-        elif button_label == "↑":
-            if x in range (225,275):
-                self.shift_grid("column", 2, "down")
-            elif x in range (425,475):
-                self.shift_grid("column", 4, "down")
-            elif x in range (625,675):
-                self.shift_grid("column", 6, "down")
-        elif button_label == "↓":
-            if x in range (225,275):
-                self.shift_grid("column", 2, "up")
-            elif x in range (425,475):
-                self.shift_grid("column", 4, "up")
-            elif x in range (625,675):
-                self.shift_grid("column", 6, "up")
+        if not self.has_shifted:        # pokud hráč ještě nepohnul
+            if button_label == "←":
+                if y in range (225,275):
+                    self.shift_grid("row", 2, "right")
+                elif y in range (425,475):
+                    self.shift_grid("row", 4, "right")
+                elif y in range (625,675):
+                    self.shift_grid("row", 6, "right")
+            elif button_label == "→":
+                if y in range (225,275):
+                    self.shift_grid("row", 2, "left")
+                elif y in range (425,475):
+                    self.shift_grid("row", 4, "left")
+                elif y in range (625,675):
+                    self.shift_grid("row", 6, "left")
+            elif button_label == "↑":
+                if x in range (225,275):
+                    self.shift_grid("column", 2, "down")
+                elif x in range (425,475):
+                    self.shift_grid("column", 4, "down")
+                elif x in range (625,675):
+                    self.shift_grid("column", 6, "down")
+            elif button_label == "↓":
+                if x in range (225,275):
+                    self.shift_grid("column", 2, "up")
+                elif x in range (425,475):
+                    self.shift_grid("column", 4, "up")
+                elif x in range (625,675):
+                    self.shift_grid("column", 6, "up")
+        else:
+            print("Player has already shifted this turn. Move or end turn.")
             
     def on_mouse_press(self, x, y, button, modifiers):
         for btn in self.button_list:
