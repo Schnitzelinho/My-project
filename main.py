@@ -89,7 +89,7 @@ class MyGame(arcade.Window):
             arcade.color.YELLOW: "Yellow"
         }
         for i in range(4):
-            player_sprite = arcade.Sprite(PLAYER_IMAGES[i],0.8)
+            player_sprite = arcade.Sprite(PLAYER_IMAGES[i],0.95)
             player_sprite.center_x, player_sprite.center_y = STARTING_POSITIONS[i] 
             self.players.append(player_sprite)
         
@@ -191,9 +191,9 @@ class MyGame(arcade.Window):
         pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
 
     def transform_tile(self, tile):
-        tile.angle += 90
-        if tile.angle > 270:
-            tile.angle = 0
+        tile.angle -= 90
+        if tile.angle < 0:
+            tile.angle = 270
         
         texture = tile.my_texture_name
         print(texture)
@@ -344,20 +344,68 @@ class MyGame(arcade.Window):
         for i in range(3):
             button = TextButton(DISTANCE_BORDER + (i * 2 + 1) * 100, DISTANCE_BORDER // 3, 50, 50, "↑", self.on_button_click)
             self.button_list.append(button)
-    
-    def shift_grid(self, entity, index, direction): #entity = row/column; index číslo řádku/sloupce, direction up/down
+
+    def get_player_grid_position(self, player):
+        grid_x = int((player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+        grid_y = int((player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+        return grid_x, grid_y
+
+    def shift_grid(self, entity, index, direction): #entity = row/column; index číslo řádku/sloupce, direction up/down/left/right
         if entity == 'row':
+            """Aktualizace při pohybu s řadou"""
             row = index - 1 #Odečtení kvůli indexování (souřadnice (2,2) v py == (1,1)...)
-            if direction == 'right':
+            if direction == 'right': #Zprava
                 self.shift_row_right(row)
-            elif direction == 'left':
+            elif direction == 'left': #Zleva
                 self.shift_row_left(row)
+
+            # Kontrola pohybu hráče s dílem
+            for player in self.players:
+                player_grid_x, player_grid_y = self.get_player_grid_position(player)
+                if player_grid_y == row: # Pokud je hráč v řadě
+                    if direction == 'right':
+                        # Jestliže se hýbalo zprava
+                        if player.center_x == DISTANCE_BORDER:  # Je na levém kraji → přesun na pravý kraj
+                            player.center_x = DISTANCE_BORDER + (GRID_SIZE -1) * TILE_SIZE
+                            print(player.center_x)
+                        else:
+                            player.center_x -= TILE_SIZE  # Jinak jen posun o díl doleva
+                    elif direction == 'left':
+                        # Jestliže se hýbalo zleva
+                        if player.center_x == DISTANCE_BORDER + (GRID_SIZE -1) * TILE_SIZE :  # Na pravém kraji
+                            player.center_x = DISTANCE_BORDER  # Wrap to the rightmost tile
+                        else:
+                            player.center_x += TILE_SIZE  # Move left
+                else:
+                    pass
+
         elif entity == 'column':
+            """Aktualizace při pohybu se sloupcem"""
             col = index - 1
             if direction == 'down':
                 self.shift_column_down(col)
             elif direction == 'up':
                 self.shift_column_up(col)
+            
+            # Check if any player is on the column being shifted
+            for player in self.players:
+                player_grid_x, player_grid_y = self.get_player_grid_position(player)
+                if player_grid_x == col:  # Player is on the shifted column
+                    if direction == 'down':
+                        # Zdola
+                        if player.center_y == DISTANCE_BORDER  + (GRID_SIZE - 1) * TILE_SIZE:  # On the bottommost tile
+                            player.center_y = DISTANCE_BORDER  # Wrap to the top
+                        else:
+                            player.center_y += TILE_SIZE  # Move down
+                    elif direction == 'up':
+                        # Move player one tile up, wrapping around if necessary
+                        if player.center_y == DISTANCE_BORDER:  # On the topmost tile
+                            player.center_y = DISTANCE_BORDER + (GRID_SIZE - 1) * TILE_SIZE # Wrap to the bottom
+                        else:
+                            player.center_y -= TILE_SIZE  # Move up
+                else:
+                    # Optional: You can handle any other logic if the player isn't on the shifted column
+                    pass
             
     def shift_row_right(self, row_index):           
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
