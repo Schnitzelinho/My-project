@@ -180,8 +180,9 @@ class MyGame(arcade.Window):
                     else:
                         tile.id = f"treasure_0{tile_id_counter}"
                     self.treasures[tile.id] = texture
-                    print(tile.id)
-
+                else:
+                    tile.id = None
+                
                 #Přiřazení vlastností ke každému dílu do slovníku
                 self.tile_positions[(col, row)] = {
                     'name': name,
@@ -189,7 +190,7 @@ class MyGame(arcade.Window):
                     'move_right': move_right,
                     'move_down': move_down,
                     'move_up': move_up,
-                    'move_left': move_left
+                    'move_left': move_left,
                 }
             
                 self.tile_list.append(tile)
@@ -278,6 +279,8 @@ class MyGame(arcade.Window):
             extra_tile.id = f"treasure_{tile_id}"
             self.treasures[extra_tile.id] = texture
             print(extra_tile.id)
+        else:
+            extra_tile.id = None
 
         if texture in TEXTURES_CURVE:  # Curve
             name = "curve"
@@ -334,19 +337,20 @@ class MyGame(arcade.Window):
             'move_right': move_right,
             'move_down': move_down,
             'move_up': move_up,
-            'move_left': move_left
+            'move_left': move_left,
             }
     
-    def get_treasure_coords(self):      # Získávání souřadnic texturám s pokladem
-        treasure_positions = {}
+    def get_treasure_coords(self):      # Získávání souřadnic texturám s pokladem           !!!! NEFUNGUJE !!!!
+        self.current_treasure_positions = {}
         for tile in self.tile_list:
-            if hasattr(tile, 'id'):
+            if tile.id is not None:         # Pokud je tile.id nějaký z pokladů
+                texture = self.treasures[tile.id]
                 treasure_coords = ((tile.center_x - DISTANCE_BORDER)//TILE_SIZE,(tile.center_y - DISTANCE_BORDER)//TILE_SIZE)
-                treasure_positions[tile.id] ={
-                    "texture": self.treasures[tile.id],
+                self.current_treasure_positions[tile.id] ={
+                    "texture": texture,
                     "position": treasure_coords
                 }
-        self.current_treasure_positions = treasure_positions
+
         pprint.pprint(self.current_treasure_positions)
 
     def setup(self):
@@ -456,7 +460,7 @@ class MyGame(arcade.Window):
         self.has_shifted = True     # Posunul → může jít
         self.get_treasure_coords()  # Aktualizace pozic pokladů
             
-    def shift_row_right(self, row_index):           
+    def shift_row_right(self, row_index):   # Pro shift z nějakého důvodu nefunguje třeba extra_tile_sprite.texture,...        
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
         extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Kopírování extra tile properties
         extra_tile_sprite = self.tile_list[-1]
@@ -467,7 +471,8 @@ class MyGame(arcade.Window):
         pushed_out_texture = self.tile_list[row_index * GRID_SIZE].texture
         pushed_out_angle = self.tile_list[row_index * GRID_SIZE].angle
         pushed_out_texture_name = self.tile_list[row_index * GRID_SIZE].my_texture_name
-        pushed_out_id = getattr(pushed_out_tile_sprite, 'id', None)  # získej ID, pokud existuje
+        pushed_out_id = getattr(pushed_out_tile_sprite, "id", None)
+
         
         # Posun všech doprava
         for col in range(GRID_SIZE):
@@ -485,10 +490,10 @@ class MyGame(arcade.Window):
                 self.tile_list[col + row_index * GRID_SIZE].angle = self.tile_list[col + 1 + row_index * GRID_SIZE].angle
                 self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[col + 1 + row_index * GRID_SIZE].my_texture_name
                 
-                if hasattr(right_tile_sprite,"id"):
+                if right_tile_sprite.id is not None:
                     current_tile_sprite.id = right_tile_sprite.id
-                    print(right_tile_sprite.id)
-                    del right_tile_sprite.id
+                    print(f"V řádku: {right_tile_sprite.id}")
+                    right_tile_sprite.id = None
                     
             else:
                 # Jinak přiřaď extra tile
@@ -498,10 +503,10 @@ class MyGame(arcade.Window):
                 self.tile_list[col + row_index * GRID_SIZE].angle = extra_tile_properties["angle"]
                 self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[-1].my_texture_name
 
-                if hasattr(extra_tile_sprite, "id"):
+                if extra_tile_sprite.id is not None:
                     current_tile_sprite.id = extra_tile_sprite.id
-                    print(extra_tile_sprite.id)     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
-                    del extra_tile_sprite.id
+                    print(f"Extra:{extra_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
+                    extra_tile_sprite.id = None
                     
 
 
@@ -516,25 +521,36 @@ class MyGame(arcade.Window):
     def shift_row_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
         extra_tile_properties = self.tile_positions[(10, 10)].copy()
+        extra_tile_sprite = self.tile_list[-1]
 
         # Copy properties of the pushed out tile (rightmost tile)
         pushed_out_tile_properties = self.tile_positions[(6, row_index)].copy()
+        pushed_out_tile_sprite = self.tile_list[6 + row_index*GRID_SIZE]
         pushed_out_texture = self.tile_list[6 + row_index * GRID_SIZE].texture
         pushed_out_angle = self.tile_list[6 + row_index * GRID_SIZE].angle
         pushed_out_texture_name = self.tile_list[6 + row_index * GRID_SIZE].my_texture_name
+        pushed_out_id = getattr(pushed_out_tile_sprite, "id", None)
 
         # Shift all tiles to the left
         for col in range(6, -1, -1):  # Start from rightmost column
             current_position = (col, row_index)
             left_position = (col - 1, row_index)
 
+            current_tile_sprite = self.tile_list[col + row_index * GRID_SIZE]
+            
             if left_position in self.tile_positions:
                 # Copy the properties from the left to the current position
                 self.tile_positions[current_position] = self.tile_positions[left_position]
 
+                left_tile_sprite = self.tile_list[col - 1 + row_index * GRID_SIZE]
                 self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[col - 1 + row_index * GRID_SIZE].texture
                 self.tile_list[col + row_index * GRID_SIZE].angle = self.tile_list[col - 1 + row_index * GRID_SIZE].angle
                 self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[col - 1 + row_index * GRID_SIZE].my_texture_name
+
+                if left_tile_sprite.id is not None:
+                    current_tile_sprite.id = left_tile_sprite.id
+                    print(f"V řádku: {left_tile_sprite.id}")
+                    left_tile_sprite.id = None
             else:
                 # Assign extra tile properties to the current position
                 self.tile_positions[current_position] = extra_tile_properties
@@ -543,34 +559,52 @@ class MyGame(arcade.Window):
                 self.tile_list[col + row_index * GRID_SIZE].angle = extra_tile_properties["angle"]
                 self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[-1].my_texture_name
 
+                if extra_tile_sprite.id is not None:
+                    current_tile_sprite.id = extra_tile_sprite.id
+                    print(f"Extra:{extra_tile_sprite.id}")
+                    extra_tile_sprite.id = None
+
         # Assign pushed out tile properties to the extra tile
         self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
+        
+        extra_tile_sprite.id = pushed_out_id
 
     def shift_column_up(self, col_index):           
         """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6]  """
         extra_tile_properties = self.tile_positions[(10, 10)].copy()
+        extra_tile_sprite = self.tile_list[-1]
 
         # Copy properties of the pushed out tile (bottommost tile)
         pushed_out_tile_properties = self.tile_positions[(col_index, 0)].copy()
+        pushed_out_tile_sprite = self.tile_list[col_index]
         pushed_out_texture = self.tile_list[col_index].texture
         pushed_out_angle = self.tile_list[col_index].angle
         pushed_out_texture_name = self.tile_list[col_index].my_texture_name
+        pushed_out_id = getattr(pushed_out_tile_sprite, "id", None)
+
 
         # Shift all tiles upwards
         for row in range(GRID_SIZE):
             current_position = (col_index, row)
             above_position = (col_index, row + 1)
 
+            current_tile_sprite = self.tile_list[col_index + row * GRID_SIZE]
             if above_position in self.tile_positions:
                 # Copy the properties from the above tile
                 self.tile_positions[current_position] = self.tile_positions[above_position]
-
+                
+                above_tile_sprite = self.tile_list[col_index + (row + 1) * GRID_SIZE]
                 self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[(row + 1) * GRID_SIZE + col_index].texture
                 self.tile_list[row * GRID_SIZE + col_index].angle = self.tile_list[(row + 1) * GRID_SIZE + col_index].angle
                 self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[(row + 1) * GRID_SIZE + col_index].my_texture_name
+
+                if above_tile_sprite.id is not None:
+                    current_tile_sprite.id = above_tile_sprite.id
+                    print(f"Ve sloupci: {above_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
+                    above_tile_sprite.id = None
             else:
                 # Assign extra tile properties
                 self.tile_positions[current_position] = extra_tile_properties
@@ -579,34 +613,52 @@ class MyGame(arcade.Window):
                 self.tile_list[row * GRID_SIZE + col_index].angle = extra_tile_properties["angle"]
                 self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[-1].my_texture_name
 
+                if extra_tile_sprite.id is not None:
+                    current_tile_sprite.id = extra_tile_sprite.id
+                    print(f"Extra:{extra_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
+                    extra_tile_sprite.id = None
+
         # Assign pushed out tile properties to the extra tile
         self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
+
+
+        extra_tile_sprite.id = pushed_out_id
      
     def shift_column_down(self, col_index):           
         """Šoupání zespoda, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
         extra_tile_properties = self.tile_positions[(10, 10)].copy()
+        extra_tile_sprite = self.tile_list[-1]
 
         # Copy properties of the pushed out tile (topmost tile)
         pushed_out_tile_properties = self.tile_positions[(col_index, 6)].copy()
+        pushed_out_tile_sprite = self.tile_list[col_index + (GRID_SIZE - 1)*GRID_SIZE]
         pushed_out_texture = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].texture
         pushed_out_angle = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].angle
         pushed_out_texture_name = self.tile_list[col_index + (GRID_SIZE - 1) * GRID_SIZE].my_texture_name
+        pushed_out_id = getattr(pushed_out_tile_sprite, "id", None)
 
         # Shift all tiles downwards
         for row in range(6, -1, -1):
             current_position = (col_index, row)
             below_position = (col_index, row - 1)
 
+            current_tile_sprite = self.tile_list[row * GRID_SIZE + col_index]
             if below_position in self.tile_positions:
                 # Copy the properties from the below tile
                 self.tile_positions[current_position] = self.tile_positions[below_position]
 
+                below_tile_sprite = self.tile_list[(row - 1) * GRID_SIZE + col_index]
                 self.tile_list[row * GRID_SIZE + col_index].texture = self.tile_list[(row - 1) * GRID_SIZE + col_index].texture
                 self.tile_list[row * GRID_SIZE + col_index].angle = self.tile_list[(row - 1) * GRID_SIZE + col_index].angle
                 self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[(row - 1) * GRID_SIZE + col_index].my_texture_name
+
+                if below_tile_sprite.id is not None:
+                    current_tile_sprite.id = below_tile_sprite.id
+                    print(f"Ve sloupci: {below_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
+                    below_tile_sprite.id = None
             else:
                 # Assign extra tile properties
                 self.tile_positions[current_position] = extra_tile_properties
@@ -615,11 +667,18 @@ class MyGame(arcade.Window):
                 self.tile_list[row * GRID_SIZE + col_index].angle = extra_tile_properties["angle"]
                 self.tile_list[row * GRID_SIZE + col_index].my_texture_name = self.tile_list[-1].my_texture_name
 
+                if extra_tile_sprite.id is not None:
+                    current_tile_sprite.id = extra_tile_sprite.id
+                    print(f"Extra:{extra_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
+                    extra_tile_sprite.id = None
+
         # Assign pushed out tile properties to the extra tile
         self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
+        
+        extra_tile_sprite.id = pushed_out_id
 
 
     def on_draw(self):
@@ -788,4 +847,4 @@ if __name__ == "__main__":
     window.setup()
     arcade.run()
 
-"""DODĚLAT OSTATNÍ ŠOUPÁNÍ (POKLADY) JAKO V SHIFT_ROW_RIGHT, SAMOTNÝ SBĚR, GUI """
+"""DODĚLAT SAMOTNÝ SBĚR, GUI """
