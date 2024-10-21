@@ -35,6 +35,7 @@ STATIC_TEXTURES = ["labkarta_0red.png", "labkarta_s2.png", "labkarta_s3.png", "l
                 "labkarta_0blue.png", "labkarta_s14.png", "labkarta_s15.png", "labkarta_0green.png"
                 ]
 TEXTURES_CURVE = ["kartalabvzor1.png", "labkarta_0red.png", "labkarta_0blue.png", "labkarta_0yellow.png", "labkarta_0green.png", "labkarta7.png", "labkarta8.png", "labkarta9.png", "labkarta10.png", "labkarta11.png", "labkarta12.png" ]
+NO_TREASURE_TEXTURES = ["kartalabvzor1.png","kartalabvzor2.png", "labkarta_0red.png", "labkarta_0yellow.png", "labkarta_0blue.png", "labkarta_0green.png"]
 PLAYER_IMAGES = ["player_red.png","player_blue.png","player_green.png","player_yellow.png"]
  
 class TextButton():
@@ -71,16 +72,16 @@ class MyGame(arcade.Window):
         self.last_shift = None
         self.tile_positions = {}
         self.button_list = []
+        self.treasures = {} #dictionary s poklady
+        tile_id_counter = 0 #pro přiřazení ID všem pokladům
 
-        # Generate the tile textures with desired frequencies
+        # Vložení všech možných textur s četností
         self.tile_textures = (
             ["kartalabvzor1.png"] * 10 +
             ["kartalabvzor2.png"] * 12 +
             ["labkarta1.png","labkarta2.png","labkarta3.png","labkarta4.png","labkarta5.png","labkarta6.png","labkarta7.png","labkarta8.png","labkarta9.png","labkarta10.png","labkarta11.png","labkarta12.png"]  # Add more if needed
         )
-
-        # Shuffle the list to randomize texture selection order
-        random.shuffle(self.tile_textures)
+        random.shuffle(self.tile_textures) # Zamíchání pořadí, aby to nebylo postupné
 
         # Načtení hráče
         self.player_colors = [arcade.color.RED, arcade.color.BLUE, arcade.color.GREEN, arcade.color.YELLOW]
@@ -93,10 +94,10 @@ class MyGame(arcade.Window):
         for i in range(4):
             player_sprite = arcade.Sprite(PLAYER_IMAGES[i],0.95)
             player_sprite.center_x, player_sprite.center_y = STARTING_POSITIONS[i] 
-            player_sprite.alpha = 255 # Průhlednost (100%)
+            player_sprite.alpha = 255 # Průhlednost (100% neprůhledné)
             self.players.append(player_sprite)
         
-        # Herní deska
+        """Herní deska"""
         self.first_shift = True
 
         for row in range(GRID_SIZE):    # Pro každý díl z plánu
@@ -110,7 +111,6 @@ class MyGame(arcade.Window):
             
                 if (row, col) in STATIC_CORDS:
                     index = STATIC_CORDS.index((row, col))
-                    print(index)
                     texture = STATIC_TEXTURES[index]
                     angle = STATIC_ANGLES[index]
 
@@ -119,7 +119,7 @@ class MyGame(arcade.Window):
                     tile.angle = angle
                     
                 else:
-                    texture = self.tile_textures.pop()  # Get and remove the last element from the list
+                    texture = self.tile_textures.pop()  # Získá a odstraní vybranou texturu
                     tile.texture = arcade.load_texture(texture)
                     tile.angle = random.randint(0, 3) * 90
                 
@@ -172,6 +172,15 @@ class MyGame(arcade.Window):
                         move_right = True
                         move_up = True
                         move_down = True
+                
+                if texture not in NO_TREASURE_TEXTURES:
+                    tile_id_counter += 1
+                    if tile_id_counter > 9:
+                        tile.id = f"treasure_{tile_id_counter}"
+                    else:
+                        tile.id = f"treasure_0{tile_id_counter}"
+                    self.treasures[tile.id] = texture
+                    print(tile.id)
 
                 #Přiřazení vlastností ke každému dílu do slovníku
                 self.tile_positions[(col, row)] = {
@@ -182,6 +191,7 @@ class MyGame(arcade.Window):
                     'move_up': move_up,
                     'move_left': move_left
                 }
+            
                 self.tile_list.append(tile)
 
         # Initialize extra tile
@@ -190,7 +200,7 @@ class MyGame(arcade.Window):
         # Create the extra tile and assign it
         self.extra_tile = self.create_extra_tile()
         self.tile_positions[(10, 10)] = self.extra_tile
-        
+
         pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
 
     def transform_tile(self, tile):
@@ -199,10 +209,10 @@ class MyGame(arcade.Window):
             tile.angle = 270
         
         texture = tile.my_texture_name
-        print(texture)
+        #print(texture)
         move_right = move_left = move_down = move_up = False
 
-        # Determine movement options based on texture and angle
+        # Přiřazení pohybových vlastností na základě textury
         if texture in TEXTURES_CURVE:  # Curve
             name = "curve"
             if tile.angle == 0:
@@ -238,7 +248,7 @@ class MyGame(arcade.Window):
             elif tile.angle == 270:
                 move_right = move_up = move_down = True
 
-        # Assign properties to the tile's position
+        # Upravení vlastností na extra tile
         self.tile_positions[(10,10)] = {
             'name': name,
             'angle': tile.angle,
@@ -254,7 +264,7 @@ class MyGame(arcade.Window):
         texture = self.tile_textures.pop()
         angle = random.choice([0, 90, 180, 270])
 
-        # Create the sprite for the extra tile
+        # Vytvoření spritu
         extra_tile = arcade.Sprite(texture, 1)
         extra_tile.angle = angle
         extra_tile.center_x = SCREEN_WIDTH - DISTANCE_BORDER
@@ -262,6 +272,12 @@ class MyGame(arcade.Window):
         
         # Přiřazení vlastností
         move_right = move_left = move_down = move_up = False
+
+        if texture not in NO_TREASURE_TEXTURES:
+            tile_id = 24 # Musí být 24, protože chybí poslední
+            extra_tile.id = f"treasure_{tile_id}"
+            self.treasures[extra_tile.id] = texture
+            print(extra_tile.id)
 
         if texture in TEXTURES_CURVE:  # Curve
             name = "curve"
@@ -309,7 +325,7 @@ class MyGame(arcade.Window):
                 move_down = True
         
         
-        # Add the sprite to the tile_list
+        # Přidání k ostatním dílům
         self.tile_list.append(extra_tile)
 
         return {
@@ -320,6 +336,18 @@ class MyGame(arcade.Window):
             'move_up': move_up,
             'move_left': move_left
             }
+    
+    def get_treasure_coords(self):      # Získávání souřadnic texturám s pokladem
+        treasure_positions = {}
+        for tile in self.tile_list:
+            if hasattr(tile, 'id'):
+                treasure_coords = ((tile.center_x - DISTANCE_BORDER)//TILE_SIZE,(tile.center_y - DISTANCE_BORDER)//TILE_SIZE)
+                treasure_positions[tile.id] ={
+                    "texture": self.treasures[tile.id],
+                    "position": treasure_coords
+                }
+        self.current_treasure_positions = treasure_positions
+        pprint.pprint(self.current_treasure_positions)
 
     def setup(self):
         # Tlačítko na otočení extra karty
@@ -407,64 +435,83 @@ class MyGame(arcade.Window):
             elif direction == 'up':
                 self.shift_column_up(col)
             
-            # Check if any player is on the column being shifted
+            # Kontrola pohybu hráče s dílem
             for player in self.players:
                 player_grid_x, player_grid_y = self.get_player_grid_position(player)
-                if player_grid_x == col:  # Player is on the shifted column
+                if player_grid_x == col:  # Hráč je v šoupnutém sloupci
                     if direction == 'down':
                         # Zdola
-                        if player.center_y == DISTANCE_BORDER  + (GRID_SIZE - 1) * TILE_SIZE:  # On the bottommost tile
-                            player.center_y = DISTANCE_BORDER  # Wrap to the top
+                        if player.center_y == DISTANCE_BORDER  + (GRID_SIZE - 1) * TILE_SIZE:  # Pokud je na horním, dej ho dolů
+                            player.center_y = DISTANCE_BORDER
                         else:
-                            player.center_y += TILE_SIZE  # Move down
+                            player.center_y += TILE_SIZE  # Jinak popojde nahoru
                     elif direction == 'up':
-                        # Move player one tile up, wrapping around if necessary
-                        if player.center_y == DISTANCE_BORDER:  # On the topmost tile
-                            player.center_y = DISTANCE_BORDER + (GRID_SIZE - 1) * TILE_SIZE # Wrap to the bottom
+                        # Shora
+                        if player.center_y == DISTANCE_BORDER:  # Je na dolním, dej ho nahoru
+                            player.center_y = DISTANCE_BORDER + (GRID_SIZE - 1) * TILE_SIZE 
                         else:
-                            player.center_y -= TILE_SIZE  # Move up
-                else:
-                    # Optional: You can handle any other logic if the player isn't on the shifted column
-                    pass
+                            player.center_y -= TILE_SIZE  # Jinak jdi dolů
         
-        self.last_shift = (entity, index, direction) # Uložení čím se hýbalo pro dalšího hráče
-        self.has_shifted = True
+        self.last_shift = (entity, index, direction) # Uložení čím se hýbalo pro dalšího hráče (sloupec,5,dolů)
+        self.has_shifted = True     # Posunul → může jít
+        self.get_treasure_coords()  # Aktualizace pozic pokladů
             
     def shift_row_right(self, row_index):           
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Copy extra tile properties
+        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Kopírování extra tile properties
+        extra_tile_sprite = self.tile_list[-1]
 
-        # Copy properties of the pushed out tile (leftmost tile)
+        # Kopírování vlastností levého dílu
         pushed_out_tile_properties = self.tile_positions[(0, row_index)].copy()
+        pushed_out_tile_sprite = self.tile_list[row_index * GRID_SIZE]
         pushed_out_texture = self.tile_list[row_index * GRID_SIZE].texture
         pushed_out_angle = self.tile_list[row_index * GRID_SIZE].angle
         pushed_out_texture_name = self.tile_list[row_index * GRID_SIZE].my_texture_name
-
-        # Shift all tiles to the right
+        pushed_out_id = getattr(pushed_out_tile_sprite, 'id', None)  # získej ID, pokud existuje
+        
+        # Posun všech doprava
         for col in range(GRID_SIZE):
             current_position = (col, row_index)
             right_position = (col + 1, row_index)
 
-            if right_position in self.tile_positions:  # If right position is within grid bounds
-                # Copy the properties from the right to the current position
+            current_tile_sprite = self.tile_list[col + row_index * GRID_SIZE]
+
+            if right_position in self.tile_positions:  # Pokud je pravá pozice v poli
+                # Kopírování vlastností z pravé na aktuální
                 self.tile_positions[current_position] = self.tile_positions[right_position]
 
+                right_tile_sprite = self.tile_list[col + 1 + row_index * GRID_SIZE]
                 self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[col + 1 + row_index * GRID_SIZE].texture
                 self.tile_list[col + row_index * GRID_SIZE].angle = self.tile_list[col + 1 + row_index * GRID_SIZE].angle
                 self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[col + 1 + row_index * GRID_SIZE].my_texture_name
+                
+                if hasattr(right_tile_sprite,"id"):
+                    current_tile_sprite.id = right_tile_sprite.id
+                    print(right_tile_sprite.id)
+                    del right_tile_sprite.id
+                    
             else:
-                # Otherwise assign extra tile properties to the current position
+                # Jinak přiřaď extra tile
                 self.tile_positions[current_position] = extra_tile_properties
 
                 self.tile_list[col + row_index * GRID_SIZE].texture = self.tile_list[-1].texture
                 self.tile_list[col + row_index * GRID_SIZE].angle = extra_tile_properties["angle"]
                 self.tile_list[col + row_index * GRID_SIZE].my_texture_name = self.tile_list[-1].my_texture_name
 
-        # Assign pushed out tile properties to the extra tile
+                if hasattr(extra_tile_sprite, "id"):
+                    current_tile_sprite.id = extra_tile_sprite.id
+                    print(extra_tile_sprite.id)     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
+                    del extra_tile_sprite.id
+                    
+
+
+        # Vezme vlastnosti první a dá je do extra tile (ještě nepřepsané)
         self.tile_positions[(10, 10)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
+
+        extra_tile_sprite.id = pushed_out_id
 
     def shift_row_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
@@ -606,13 +653,12 @@ class MyGame(arcade.Window):
     
 
     def get_tile_under_player(self, player):
-        """Returns the position and properties of the tile under the given player."""
-        # Calculate grid position based on player's center position
+        """Vrací pozici a vlastnosti dílu pod hráčem"""
         grid_x = int(player.center_x - DISTANCE_BORDER) // TILE_SIZE
         grid_y = int(player.center_y - DISTANCE_BORDER) // TILE_SIZE
 
-        tile_position = (int(grid_x), int(grid_y))
-        return self.tile_positions.get(tile_position, None)
+        tile_position = (grid_x, grid_y)
+        return self.tile_positions.get(tile_position)       # z dict s pozicemi vrací konkrétní souřadnice
     
     
     def get_adjacent_tile(self,current_tile_position, direction):
@@ -624,50 +670,61 @@ class MyGame(arcade.Window):
             adjacent_position = (current_tile_position[0] - 1, current_tile_position[1])
         elif direction == 'right':
             adjacent_position = (current_tile_position[0] + 1, current_tile_position[1])
-        return self.tile_positions.get(adjacent_position,None)
+        return self.tile_positions.get(adjacent_position,None)  # none pokud jinde nic není
 
 
     def on_key_press(self, key, modifiers):
         active_player = self.players[self.active_player_index]
         tile_under_player = self.get_tile_under_player(active_player)
-        
+
+        if key == arcade.key.P:
+            self.get_treasure_coords()
+
         if self.has_shifted:
             if key == arcade.key.UP:
-                if tile_under_player and tile_under_player["move_up"]:
+                if tile_under_player["move_up"]:      #pokud je move up true (nahoru vede cesta)
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'up')
-                    if adjacent_tile and adjacent_tile["move_down"]:
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'up')      #získá info o dílu nad
+                    if adjacent_tile and adjacent_tile["move_down"]:           # pokud nad ním existuje a vede z ní cesta dolů
                         active_player.center_y += MOVEMENT_SPEED
+                    else:
+                        print("Cannot move up")
                 else:
                     print("Cannot move up")
                 
             elif key == arcade.key.DOWN:
-                if tile_under_player and tile_under_player["move_down"]:
+                if tile_under_player["move_down"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
                     adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'down')
                     if adjacent_tile and adjacent_tile["move_up"]:
                         active_player.center_y -= MOVEMENT_SPEED
+                    else:
+                        print("Cannot move down")                        
                 else:
                     print("Cannot move down")
             elif key == arcade.key.LEFT:
-                if tile_under_player and tile_under_player["move_left"]:
+                if tile_under_player["move_left"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
                     adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'left')
                     if adjacent_tile and adjacent_tile["move_right"]:
                         active_player.center_x -= MOVEMENT_SPEED
+                    else:
+                        print("Cannot move left")
                 else:
                     print("Cannot move left")
 
             elif key == arcade.key.RIGHT:
-                if tile_under_player and tile_under_player["move_right"]:
+                if tile_under_player["move_right"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
                     adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'right')
                     if adjacent_tile and adjacent_tile["move_left"]:
                         active_player.center_x += MOVEMENT_SPEED
+                    else:
+                        print("Cannot move right")
                 else:
                     print("Cannot move right")  
             elif key == arcade.key.ENTER:
@@ -675,11 +732,12 @@ class MyGame(arcade.Window):
                 self.has_shifted = False
                 self.active_player_index = (self.active_player_index + 1) % len(self.players) 
                 self.update_player_opacity()
-
+                #pprint.pprint(self.tile_positions)
                 print(tile_under_player)
+                
         else:
             print("Player must shift first")
-
+        
     def on_key_release(self, key, modifiers):
         """ Called whenever the user releases a key. """
         pass
@@ -730,6 +788,4 @@ if __name__ == "__main__":
     window.setup()
     arcade.run()
 
-"""DODĚLAT PŘI ŠOUPÁNÍ POHYB HRÁČŮ S KARTOU, STATICKÁ POLE, ODMĚNY NEJSPÍŠ UDĚLAT VE STYLU 1-24 A SBÍRAT, CELKOVÉ GUI
-    ODMĚNY NEJSPÍŠ ZPŮSOBEM NAHRÁT DALŠÍ DÍLY, PAK UDĚLAT NĚJAKOU LOGIKU, JAKOŽE DÍL 1-10 JSOU ZATÁČKY, PODLE TOHO ATRIBUTY,...
-    GENERACE POKLADŮ """
+"""DODĚLAT OSTATNÍ ŠOUPÁNÍ (POKLADY) JAKO V SHIFT_ROW_RIGHT, SAMOTNÝ SBĚR, GUI """
