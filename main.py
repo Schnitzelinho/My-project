@@ -353,6 +353,18 @@ class MyGame(arcade.Window):
 
         pprint.pprint(self.current_treasure_positions)
 
+    def treasure_goal(self):
+        player_treasures_dict = {}
+        for player in range(len(self.players)):
+            current_player_color = self.player_colors[player]
+            current_color_name = self.player_color_names[current_player_color]
+            player_name = f"Player {current_color_name}"
+            player_treasures_dict[player_name] = []
+            #player_treasures_dict[player_name].append()
+        pprint.pprint(player_treasures_dict)
+        print(player_treasures_dict["Player Blue"])
+
+        
     def setup(self):
         # Tlačítko na otočení extra karty
         button = TextButton(SCREEN_WIDTH - DISTANCE_BORDER, SCREEN_HEIGHT - 1.5*DISTANCE_BORDER, 100,25,"Rotate", self.on_button_click)
@@ -738,6 +750,7 @@ class MyGame(arcade.Window):
 
         if key == arcade.key.P:
             self.get_treasure_coords()
+            self.treasure_goal()
 
         if self.has_shifted:
             if key == arcade.key.UP:
@@ -801,7 +814,7 @@ class MyGame(arcade.Window):
                 
                 # Změnění průhlednosti pro lepší viditelnost
                 self.update_player_opacity()
-                
+
                 #pprint.pprint(self.tile_positions)
                 print(tile_under_player)
                 
