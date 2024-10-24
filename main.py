@@ -789,8 +789,19 @@ class MyGame(arcade.Window):
             elif key == arcade.key.ENTER:
                 # Konec kola
                 self.has_shifted = False
+                
+                # Kontrola, jestli stojí na hledaném pokladu
+                grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+                grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+                # if (grid_x,grid_y) == self.current_treasure_positions[searched_treasure]:
+                #     print("Treasure Collected")
+                
+                # Přepnutí na dalšího hráče
                 self.active_player_index = (self.active_player_index + 1) % len(self.players) 
+                
+                # Změnění průhlednosti pro lepší viditelnost
                 self.update_player_opacity()
+                
                 #pprint.pprint(self.tile_positions)
                 print(tile_under_player)
                 
