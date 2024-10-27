@@ -73,6 +73,7 @@ class MyGame(arcade.Window):
         self.tile_positions = {}
         self.button_list = []
         self.treasures = {} #dictionary s poklady
+        self.current_treasure_positions = {}
         tile_id_counter = 0 #pro přiřazení ID všem pokladům
 
         # Vložení všech možných textur s četností
@@ -203,6 +204,8 @@ class MyGame(arcade.Window):
         self.tile_positions[(10, 10)] = self.extra_tile
 
         pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
+        self.get_treasure_coords()
+        self.treasure_goal()    
 
     def transform_tile(self, tile):
         tile.angle -= 90
@@ -341,7 +344,6 @@ class MyGame(arcade.Window):
             }
     
     def get_treasure_coords(self):      # Získávání souřadnic texturám s pokladem           !!!! NEFUNGUJE !!!!
-        self.current_treasure_positions = {}
         for tile in self.tile_list:
             if tile.id is not None:         # Pokud je tile.id nějaký z pokladů
                 texture = self.treasures[tile.id]
@@ -350,21 +352,33 @@ class MyGame(arcade.Window):
                     "texture": texture,
                     "position": treasure_coords
                 }
+        # if self.player_treasures_dict:
+        #     for player in range(len(self.players)):
+        #         current_player_color = self.player_colors[player]
+        #         current_color_name = self.player_color_names[current_player_color]
+        #         for treasure in len(self.player_treasures_dict[f"Player {current_color_name}"]):
+        #             updated_coords = self.current_treasure_positions[treasure]["position"]
 
         pprint.pprint(self.current_treasure_positions)
 
     def treasure_goal(self):
-        player_treasures_dict = {}
+        self.player_treasures_dict = {}
+        first_current_treasure_positions = self.current_treasure_positions
         for player in range(len(self.players)):
             current_player_color = self.player_colors[player]
             current_color_name = self.player_color_names[current_player_color]
             player_name = f"Player {current_color_name}"
-            player_treasures_dict[player_name] = []
-            #player_treasures_dict[player_name].append()
-        pprint.pprint(player_treasures_dict)
-        print(player_treasures_dict["Player Blue"])
-
-        
+            self.player_treasures_dict[player_name] = []
+            counter = 0
+            while counter < 6:
+                counter += 1
+                treasure_name = random.choice(list(first_current_treasure_positions))
+                treasure = first_current_treasure_positions.pop(treasure_name)
+                print(treasure)
+                self.player_treasures_dict[player_name].append(treasure)
+        pprint.pprint(self.player_treasures_dict)
+        print(self.player_treasures_dict["Player Red"])
+    
     def setup(self):
         # Tlačítko na otočení extra karty
         button = TextButton(SCREEN_WIDTH - DISTANCE_BORDER, SCREEN_HEIGHT - 1.5*DISTANCE_BORDER, 100,25,"Rotate", self.on_button_click)
@@ -388,6 +402,8 @@ class MyGame(arcade.Window):
         for i in range(3):
             button = TextButton(DISTANCE_BORDER + (i * 2 + 1) * 100, DISTANCE_BORDER // 3, 50, 50, "↑", self.on_button_click)
             self.button_list.append(button)
+
+
 
     def get_player_grid_position(self, player):
         grid_x = int((player.center_x - DISTANCE_BORDER) // TILE_SIZE)
@@ -750,7 +766,7 @@ class MyGame(arcade.Window):
 
         if key == arcade.key.P:
             self.get_treasure_coords()
-            self.treasure_goal()
+            #self.treasure_goal()
 
         if self.has_shifted:
             if key == arcade.key.UP:
