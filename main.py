@@ -76,6 +76,14 @@ class MyGame(arcade.Window):
         self.current_treasure_positions = {}
         tile_id_counter = 0 #pro přiřazení ID všem pokladům
 
+        # Co aktuální hráč hledá
+        # Add a target treasure sprite
+        self.target_treasure_sprite = arcade.Sprite(scale=1.0)
+
+        # Position it somewhere outside the grid, like in the top-right corner
+        self.target_treasure_sprite.center_x = SCREEN_WIDTH - DISTANCE_BORDER
+        self.target_treasure_sprite.center_y = DISTANCE_BORDER + 50
+
         # Vložení všech možných textur s četností
         self.tile_textures = (
             ["kartalabvzor1.png"] * 10 +
@@ -201,7 +209,7 @@ class MyGame(arcade.Window):
 
         # Create the extra tile and assign it
         self.extra_tile = self.create_extra_tile()
-        self.tile_positions[(10, 10)] = self.extra_tile
+        self.tile_positions[(10, 6)] = self.extra_tile
 
         pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
         self.get_treasure_coords()
@@ -253,7 +261,7 @@ class MyGame(arcade.Window):
                 move_right = move_up = move_down = True
 
         # Upravení vlastností na extra tile
-        self.tile_positions[(10,10)] = {
+        self.tile_positions[(10, 6)] = {
             'name': name,
             'angle': tile.angle,
             'move_right': move_right,
@@ -352,16 +360,11 @@ class MyGame(arcade.Window):
                     "texture": texture,
                     "position": treasure_coords
                 }
-        # if self.player_treasures_dict:
-        #     for player in range(len(self.players)):
-        #         current_player_color = self.player_colors[player]
-        #         current_color_name = self.player_color_names[current_player_color]
-        #         for treasure in len(self.player_treasures_dict[f"Player {current_color_name}"]):
-        #             updated_coords = self.current_treasure_positions[treasure]["position"]
-
+        
         pprint.pprint(self.current_treasure_positions)
 
     def treasure_goal(self):
+        """Vygenerování seznamu pokladů pro každého hráče, jen při spuštění"""
         self.player_treasures_dict = {}
         first_current_treasure_positions = self.current_treasure_positions
         for player in range(len(self.players)):
@@ -378,6 +381,45 @@ class MyGame(arcade.Window):
                 self.player_treasures_dict[player_name].append(treasure)
         pprint.pprint(self.player_treasures_dict)
         print(self.player_treasures_dict["Player Red"])
+    
+    def update_treasure_position(self):
+        # Check if player treasures have been assigned
+        if self.player_treasures_dict:
+            # Loop through each player
+            for player in range(len(self.players)):
+                current_player_color = self.player_colors[player]
+                current_color_name = self.player_color_names[current_player_color]
+                player_name = f"Player {current_color_name}"
+                treasures = self.player_treasures_dict[player_name]
+                for index, treasure in enumerate(treasures):
+                    texture = treasure["texture"]
+                    for treasure_id, treasure_info in self.current_treasure_positions.items():
+                        if treasure_info['texture'] == texture:
+                            new_position = treasure_info['position']
+                            #if new_position != self.player_treasures_dict[player_name][index]['position']:
+                            self.player_treasures_dict[player_name][index]['position'] = new_position
+                            print(f"Updated {treasure_id} for {player_name} to new position: {new_position}")
+                            break  # Exit the loop once the match is found
+
+        print(self.player_treasures_dict["Player Red"])
+
+    def update_target_treasure(self):
+        # Get the current player name
+        current_player_color = self.player_colors[self.active_player_index]
+        current_color_name = self.player_color_names[current_player_color]
+        player_name = f"Player {current_color_name}"
+
+        # Get the player's treasure list
+        player_treasures = self.player_treasures_dict[player_name]
+
+        # Check if the player has treasures left
+        if player_treasures:
+            # Get the texture of the first treasure in the list (the one they are seeking)
+            treasure_texture = player_treasures[0]['texture']
+            # Update the sprite's texture
+            self.target_treasure_sprite.texture = arcade.load_texture(treasure_texture)
+            # Set the sprite's angle to 0 to keep it at the default angle
+            self.target_treasure_sprite.angle = 0
     
     def setup(self):
         # Tlačítko na otočení extra karty
@@ -403,12 +445,45 @@ class MyGame(arcade.Window):
             button = TextButton(DISTANCE_BORDER + (i * 2 + 1) * 100, DISTANCE_BORDER // 3, 50, 50, "↑", self.on_button_click)
             self.button_list.append(button)
 
-
+        self.update_target_treasure()
 
     def get_player_grid_position(self, player):
         grid_x = int((player.center_x - DISTANCE_BORDER) // TILE_SIZE)
         grid_y = int((player.center_y - DISTANCE_BORDER) // TILE_SIZE)
         return grid_x, grid_y
+
+    def check_for_treasure(self):
+        # Get the active player
+        active_player = self.players[self.active_player_index]
+        
+        # Calculate the player's current grid position
+        grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
+        grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
+        
+        # Get the player's name
+        current_player_color = self.player_colors[self.active_player_index]
+        current_color_name = self.player_color_names[current_player_color]
+        player_name = f"Player {current_color_name}"
+        
+        # Get the list of treasures assigned to the active player
+        player_treasures = self.player_treasures_dict[player_name]
+
+        # Check if the player is on the searched treasure
+        if player_treasures:    # Pokud seznam není prázdný
+            # Assuming the first treasure in the list is the one being searched for
+            searched_treasure = player_treasures[0]  # You can adjust this if needed
+            treasure_position = searched_treasure['position']
+
+            # Check if the player's position matches the treasure's position
+            if (grid_x, grid_y) == treasure_position:
+                print("Treasure Collected!")
+                # Remove the collected treasure from the player's list
+                self.player_treasures_dict[player_name].pop(0)
+                # Add further logic like awarding points or progressing the game
+            else:
+                print("No treasure at the current position.")
+        else:
+            print("Player must return to starting position")
 
     def update_player_opacity(self):
         """Zprůhlednění neaktivních hráčů, aby bylo vidět, na čem stojí"""
@@ -487,10 +562,11 @@ class MyGame(arcade.Window):
         self.last_shift = (entity, index, direction) # Uložení čím se hýbalo pro dalšího hráče (sloupec,5,dolů)
         self.has_shifted = True     # Posunul → může jít
         self.get_treasure_coords()  # Aktualizace pozic pokladů
+        self.update_treasure_position()
             
     def shift_row_right(self, row_index):   # Pro shift z nějakého důvodu nefunguje třeba extra_tile_sprite.texture,...        
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()  # Kopírování extra tile properties
+        extra_tile_properties = self.tile_positions[(10, 6)].copy()  # Kopírování extra tile properties
         extra_tile_sprite = self.tile_list[-1]
 
         # Kopírování vlastností levého dílu
@@ -522,6 +598,9 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = right_tile_sprite.id
                     print(f"V řádku: {right_tile_sprite.id}")
                     right_tile_sprite.id = None
+                
+                else:
+                    current_tile_sprite.id = None
                     
             else:
                 # Jinak přiřaď extra tile
@@ -535,11 +614,13 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = extra_tile_sprite.id
                     print(f"Extra:{extra_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
                     extra_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None
                     
 
 
         # Vezme vlastnosti první a dá je do extra tile (ještě nepřepsané)
-        self.tile_positions[(10, 10)] = pushed_out_tile_properties
+        self.tile_positions[(10, 6)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -548,7 +629,7 @@ class MyGame(arcade.Window):
 
     def shift_row_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()
+        extra_tile_properties = self.tile_positions[(10, 6)].copy()
         extra_tile_sprite = self.tile_list[-1]
 
         # Copy properties of the pushed out tile (rightmost tile)
@@ -579,6 +660,8 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = left_tile_sprite.id
                     print(f"V řádku: {left_tile_sprite.id}")
                     left_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None
             else:
                 # Assign extra tile properties to the current position
                 self.tile_positions[current_position] = extra_tile_properties
@@ -591,9 +674,11 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = extra_tile_sprite.id
                     print(f"Extra:{extra_tile_sprite.id}")
                     extra_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None
 
         # Assign pushed out tile properties to the extra tile
-        self.tile_positions[(10, 10)] = pushed_out_tile_properties
+        self.tile_positions[(10, 6)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -602,7 +687,7 @@ class MyGame(arcade.Window):
 
     def shift_column_up(self, col_index):           
         """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6]  """
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()
+        extra_tile_properties = self.tile_positions[(10, 6)].copy()
         extra_tile_sprite = self.tile_list[-1]
 
         # Copy properties of the pushed out tile (bottommost tile)
@@ -633,6 +718,8 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = above_tile_sprite.id
                     print(f"Ve sloupci: {above_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
                     above_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None                    
             else:
                 # Assign extra tile properties
                 self.tile_positions[current_position] = extra_tile_properties
@@ -645,9 +732,11 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = extra_tile_sprite.id
                     print(f"Extra:{extra_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
                     extra_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None
 
         # Assign pushed out tile properties to the extra tile
-        self.tile_positions[(10, 10)] = pushed_out_tile_properties
+        self.tile_positions[(10, 6)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -657,7 +746,7 @@ class MyGame(arcade.Window):
      
     def shift_column_down(self, col_index):           
         """Šoupání zespoda, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
-        extra_tile_properties = self.tile_positions[(10, 10)].copy()
+        extra_tile_properties = self.tile_positions[(10, 6)].copy()
         extra_tile_sprite = self.tile_list[-1]
 
         # Copy properties of the pushed out tile (topmost tile)
@@ -687,6 +776,8 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = below_tile_sprite.id
                     print(f"Ve sloupci: {below_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
                     below_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None
             else:
                 # Assign extra tile properties
                 self.tile_positions[current_position] = extra_tile_properties
@@ -699,9 +790,11 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = extra_tile_sprite.id
                     print(f"Extra:{extra_tile_sprite.id}")     # v terminálu bude odpovídat předchozímu, jelikož to je před celou aktualizací pozic
                     extra_tile_sprite.id = None
+                else:
+                    current_tile_sprite.id = None
 
         # Assign pushed out tile properties to the extra tile
-        self.tile_positions[(10, 10)] = pushed_out_tile_properties
+        self.tile_positions[(10, 6)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -719,6 +812,8 @@ class MyGame(arcade.Window):
         for player in self.players:
             player.draw()
         
+        self.target_treasure_sprite.draw()
+
         # Text
         current_player_color = self.player_colors[self.active_player_index]
         current_color_name = self.player_color_names[current_player_color]
@@ -738,7 +833,6 @@ class MyGame(arcade.Window):
         if active_player.center_y > SCREEN_HEIGHT - DISTANCE_BORDER:
             active_player.center_y = SCREEN_HEIGHT - DISTANCE_BORDER
     
-
     def get_tile_under_player(self, player):
         """Vrací pozici a vlastnosti dílu pod hráčem"""
         grid_x = int(player.center_x - DISTANCE_BORDER) // TILE_SIZE
@@ -746,7 +840,6 @@ class MyGame(arcade.Window):
 
         tile_position = (grid_x, grid_y)
         return self.tile_positions.get(tile_position)       # z dict s pozicemi vrací konkrétní souřadnice
-    
     
     def get_adjacent_tile(self,current_tile_position, direction):
         if direction == 'up':
@@ -766,7 +859,6 @@ class MyGame(arcade.Window):
 
         if key == arcade.key.P:
             self.get_treasure_coords()
-            #self.treasure_goal()
 
         if self.has_shifted:
             if key == arcade.key.UP:
@@ -820,14 +912,11 @@ class MyGame(arcade.Window):
                 self.has_shifted = False
                 
                 # Kontrola, jestli stojí na hledaném pokladu
-                grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
-                grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                # if (grid_x,grid_y) == self.current_treasure_positions[searched_treasure]:
-                #     print("Treasure Collected")
+                self.check_for_treasure()
                 
                 # Přepnutí na dalšího hráče
                 self.active_player_index = (self.active_player_index + 1) % len(self.players) 
-                
+                self.update_target_treasure()
                 # Změnění průhlednosti pro lepší viditelnost
                 self.update_player_opacity()
 
