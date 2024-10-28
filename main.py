@@ -422,16 +422,16 @@ class MyGame(arcade.Window):
             self.target_treasure_sprite.angle = 0
         else:
             if current_color_name == "Red":
-                self.target_treasure_sprite.texture = arcade.load_texture("labkarta0_red.png")
+                self.target_treasure_sprite.texture = arcade.load_texture("labkarta_0red.png")
                 self.target_treasure_sprite.angle = 90
             elif current_color_name == "Blue":
-                self.target_treasure_sprite.texture = arcade.load_texture("labkarta0_blue.png")
+                self.target_treasure_sprite.texture = arcade.load_texture("labkarta_0blue.png")
                 self.target_treasure_sprite.angle = 0
             elif current_color_name == "Green":
-                self.target_treasure_sprite.texture = arcade.load_texture("labkarta0_green.png")
+                self.target_treasure_sprite.texture = arcade.load_texture("labkarta_0green.png")
                 self.target_treasure_sprite.angle = 270              
             elif current_color_name == "Yellow":
-                self.target_treasure_sprite.texture = arcade.load_texture("labkarta0_yellow.png")
+                self.target_treasure_sprite.texture = arcade.load_texture("labkarta_0yellow.png")
                 self.target_treasure_sprite.angle = 180
     
     def setup(self):
