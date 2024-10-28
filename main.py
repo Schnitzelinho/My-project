@@ -62,7 +62,7 @@ class MyGame(arcade.Window):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE, update_rate = 1/30)
 
         # Nastavení barvy pozadí
-        arcade.set_background_color(arcade.color.NAVY_BLUE)
+        arcade.set_background_color(arcade.color.COBALT)    #nebo NAVY_BLUE?
  
         #Držení spritů
         self.tile_list = arcade.SpriteList()
@@ -817,7 +817,9 @@ class MyGame(arcade.Window):
 
     def on_draw(self):
         arcade.start_render()
+        arcade.draw_rectangle_filled(1100, 450, 350, 850, arcade.color.GRAY)
         self.tile_list.draw()
+        
         for button in self.button_list:
             button.draw()
 
@@ -830,7 +832,7 @@ class MyGame(arcade.Window):
         # Text
         current_player_color = self.player_colors[self.active_player_index]
         current_color_name = self.player_color_names[current_player_color]
-        arcade.draw_text(f"Now plays {current_color_name} player", SCREEN_WIDTH - 2* DISTANCE_BORDER,SCREEN_HEIGHT - 2* DISTANCE_BORDER, arcade.color.WHITE , 20, font_name="Arial")
+        arcade.draw_text(f"Now plays {current_color_name} player", SCREEN_WIDTH - 2* DISTANCE_BORDER,SCREEN_HEIGHT - 2* DISTANCE_BORDER, current_player_color , 20, font_name="Calibri")
 
     def update(self, delta_time):
         self.tile_list.update()
