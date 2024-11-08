@@ -1,23 +1,23 @@
+import tkinter as tk
+from tkinter import messagebox
 import arcade, random, pprint
 
 import arcade.color
 
-# Konstanty
+"""KONSTANTY"""
 SCREEN_WIDTH = 1300
 SCREEN_HEIGHT = 900
 SCREEN_TITLE = "Labyrinth"
 MOVEMENT_SPEED = 100    #Pohyb o jeden díl
 TILE_SIZE = 100         #Velikost dílu
 GRID_SIZE = 7           #Počet sloupců a řádků
-BACKGROUND_WIDTH = GRID_SIZE * TILE_SIZE
-BACKGROUND_HEIGHT = GRID_SIZE * TILE_SIZE
 DISTANCE_BORDER = 150   #Vzdálenost středu karty od hranice pole
 STARTING_POSITIONS = [
     (DISTANCE_BORDER, DISTANCE_BORDER),
     (DISTANCE_BORDER, SCREEN_HEIGHT - DISTANCE_BORDER),
     (SCREEN_WIDTH - DISTANCE_BORDER - 400, SCREEN_HEIGHT - DISTANCE_BORDER), 
     (SCREEN_WIDTH - DISTANCE_BORDER - 400, DISTANCE_BORDER)  
-]
+]   # RED, BLUE, GREEN, YELLOW
 TREASURE_COUNT = 24
 STATIC_CORDS = [(0, 0), (0, 2), (0, 4), (0, 6),
                 (2, 0), (2, 2), (2, 4), (2, 6),
@@ -28,17 +28,17 @@ STATIC_ANGLES = [90,0,0,180,
                 270,0,90,90,
                 270,270,180,90,
                 0,180,180,270
-                ]
+                ]                               # Jejich souřadnice
 STATIC_TEXTURES = ["labkarta_0red.png", "labkarta_s2.png", "labkarta_s3.png", "labkarta_0yellow.png",
                 "labkarta_s5.png", "labkarta_s6.png", "labkarta_s7.png", "labkarta_s8.png",
                 "labkarta_s9.png", "labkarta_s10.png", "labkarta_s11.png", "labkarta_s12.png",
                 "labkarta_0blue.png", "labkarta_s14.png", "labkarta_s15.png", "labkarta_0green.png"
-                ]
-TEXTURES_CURVE = ["kartalabvzor1.png", "labkarta_0red.png", "labkarta_0blue.png", "labkarta_0yellow.png", "labkarta_0green.png", "labkarta7.png", "labkarta8.png", "labkarta9.png", "labkarta10.png", "labkarta11.png", "labkarta12.png" ]
-NO_TREASURE_TEXTURES = ["kartalabvzor1.png","kartalabvzor2.png", "labkarta_0red.png", "labkarta_0yellow.png", "labkarta_0blue.png", "labkarta_0green.png"]
+                ]                               # Jejich vzhledy
+TEXTURES_CURVE = ["kartalabvzor1.png", "labkarta_0red.png", "labkarta_0blue.png", "labkarta_0yellow.png", "labkarta_0green.png", "labkarta7.png", "labkarta8.png", "labkarta9.png", "labkarta10.png", "labkarta11.png", "labkarta12.png" ]  # Všechny zatáčky
+NO_TREASURE_TEXTURES = ["kartalabvzor1.png","kartalabvzor2.png", "labkarta_0red.png", "labkarta_0yellow.png", "labkarta_0blue.png", "labkarta_0green.png"]  # Všechny bez pokladu
 PLAYER_IMAGES = ["player_red.png","player_blue.png","player_green.png","player_yellow.png"]
  
-class TextButton():
+class TextButton():         # Třída tlačítka s textem
     def __init__(self, center_x, center_y, width, height, text, action_function):
         self.center_x = center_x
         self.center_y = center_y
@@ -64,9 +64,9 @@ class MyGame(arcade.Window):
         # Nastavení barvy pozadí
         arcade.set_background_color(arcade.color.COBALT)    #nebo NAVY_BLUE?
  
-        #Držení spritů
+        #Držení spritů (zákl. grafický jednotky), atd.
         self.tile_list = arcade.SpriteList()
-        self.players = []
+        self.players = []       
         self.active_player_index = 0
         self.has_shifted = False
         self.last_shift = None
@@ -77,12 +77,9 @@ class MyGame(arcade.Window):
         tile_id_counter = 0 #pro přiřazení ID všem pokladům
 
         # Co aktuální hráč hledá
-        # Add a target treasure sprite
         self.target_treasure_sprite = arcade.Sprite(scale=1.0)
-
-        # Position it somewhere outside the grid, like in the top-right corner
-        self.target_treasure_sprite.center_x = SCREEN_WIDTH - DISTANCE_BORDER
-        self.target_treasure_sprite.center_y = DISTANCE_BORDER + 50
+        self.target_treasure_sprite.center_x = 1150
+        self.target_treasure_sprite.center_y = 750
 
         # Vložení všech možných textur s četností
         self.tile_textures = (
@@ -92,7 +89,8 @@ class MyGame(arcade.Window):
         )
         random.shuffle(self.tile_textures) # Zamíchání pořadí, aby to nebylo postupné
 
-        # Načtení hráče
+        """Hráč"""
+        # v případě přepsání do češtiny zkontrolovat všude, kde se pracuje s player_color!!!!
         self.player_colors = [arcade.color.RED, arcade.color.BLUE, arcade.color.GREEN, arcade.color.YELLOW]
         self.player_color_names = {
             arcade.color.RED: "Red",
@@ -107,8 +105,6 @@ class MyGame(arcade.Window):
             self.players.append(player_sprite)
         
         """Herní deska"""
-        self.first_shift = True
-
         for row in range(GRID_SIZE):    # Pro každý díl z plánu
             for col in range(GRID_SIZE):    
                 center_x = DISTANCE_BORDER + col * TILE_SIZE        #střed dílu = vzdálenost od hrany + číslo sloupce * velikost dílu (150+1*100 = 250)
@@ -118,16 +114,16 @@ class MyGame(arcade.Window):
                 tile.center_x = center_x
                 tile.center_y = center_y
             
-                if (row, col) in STATIC_CORDS:
+                if (row, col) in STATIC_CORDS:  # Neměnné díly
                     index = STATIC_CORDS.index((row, col))
                     texture = STATIC_TEXTURES[index]
                     angle = STATIC_ANGLES[index]
 
-                    # Load texture and set angle
+                    # Načti náležitou texturu a úhel
                     tile.texture = arcade.load_texture(texture)
                     tile.angle = angle
                     
-                else:
+                else:   # Je pohyblivá
                     texture = self.tile_textures.pop()  # Získá a odstraní vybranou texturu
                     tile.texture = arcade.load_texture(texture)
                     tile.angle = random.randint(0, 3) * 90
@@ -182,9 +178,9 @@ class MyGame(arcade.Window):
                         move_up = True
                         move_down = True
                 
-                if texture not in NO_TREASURE_TEXTURES:
+                if texture not in NO_TREASURE_TEXTURES: # Pokud má texturu
                     tile_id_counter += 1
-                    if tile_id_counter > 9:
+                    if tile_id_counter > 9: #jen aby to bylo seřazené (11 vnímáno před 9 ale irelevantní pro fčnost)
                         tile.id = f"treasure_{tile_id_counter}"
                     else:
                         tile.id = f"treasure_0{tile_id_counter}"
@@ -194,37 +190,40 @@ class MyGame(arcade.Window):
                 
                 #Přiřazení vlastností ke každému dílu do slovníku
                 self.tile_positions[(col, row)] = {
-                    'name': name,
-                    'angle': tile.angle,
-                    'move_right': move_right,
-                    'move_down': move_down,
-                    'move_up': move_up,
-                    'move_left': move_left,
+                    "name": name,
+                    "angle": tile.angle,
+                    "move_right": move_right,
+                    "move_down": move_down,
+                    "move_up": move_up,
+                    "move_left": move_left,
                 }
             
                 self.tile_list.append(tile)
 
-        # Initialize extra tile
+        # Vytvoření extra_tile
         self.extra_tile = None
-
-        # Create the extra tile and assign it
         self.extra_tile = self.create_extra_tile()
         self.tile_positions[(10, 6)] = self.extra_tile
 
+
         pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
+        # Prvotní spuštění fcí (získání souřadnic všech pokladů, přiřazení hráčům)
         self.get_treasure_coords()
         self.treasure_goal()    
 
-    def transform_tile(self, tile):
+        # tkinter na messagebox
+        self.root = tk.Tk()
+        self.root.withdraw()  # Skryje hlavní okno tkinter
+
+    def transform_tile(self, tile):     # K otočení extra_tile pomocí tlačítka
         tile.angle -= 90
         if tile.angle < 0:
             tile.angle = 270
         
         texture = tile.my_texture_name
-        #print(texture)
         move_right = move_left = move_down = move_up = False
 
-        # Přiřazení pohybových vlastností na základě textury
+        # Přiřazení pohybových vlastností na základě textury, upraveno protože změněn úhel
         if texture in TEXTURES_CURVE:  # Curve
             name = "curve"
             if tile.angle == 0:
@@ -260,19 +259,19 @@ class MyGame(arcade.Window):
             elif tile.angle == 270:
                 move_right = move_up = move_down = True
 
-        # Upravení vlastností na extra tile
+        # Upravení (jen změněných) vlastností na extra tile
         self.tile_positions[(10, 6)] = {
-            'name': name,
-            'angle': tile.angle,
-            'move_right': move_right,
-            'move_down': move_down,
-            'move_up': move_up,
-            'move_left': move_left
+            "name": name,
+            "angle": tile.angle,
+            "move_right": move_right,
+            "move_down": move_down,
+            "move_up": move_up,
+            "move_left": move_left
         }
         
         return tile
 
-    def create_extra_tile(self):
+    def create_extra_tile(self):   # Inicializace extra dílu, prakticky stejné jako ostatní díly
         texture = self.tile_textures.pop()
         angle = random.choice([0, 90, 180, 270])
 
@@ -280,7 +279,7 @@ class MyGame(arcade.Window):
         extra_tile = arcade.Sprite(texture, 1)
         extra_tile.angle = angle
         extra_tile.center_x = SCREEN_WIDTH - DISTANCE_BORDER
-        extra_tile.center_y = SCREEN_HEIGHT - DISTANCE_BORDER
+        extra_tile.center_y = SCREEN_HEIGHT //2 
         
         # Přiřazení vlastností
         move_right = move_left = move_down = move_up = False
@@ -343,15 +342,15 @@ class MyGame(arcade.Window):
         self.tile_list.append(extra_tile)
 
         return {
-            'name': name,
-            'angle': angle,
-            'move_right': move_right,
-            'move_down': move_down,
-            'move_up': move_up,
-            'move_left': move_left,
+            "name": name,
+            "angle": angle,
+            "move_right": move_right,
+            "move_down": move_down,
+            "move_up": move_up,
+            "move_left": move_left,
             }
     
-    def get_treasure_coords(self):      # Získávání souřadnic texturám s pokladem           !!!! NEFUNGUJE !!!!
+    def get_treasure_coords(self):      # Získávání souřadnic texturám s pokladem
         for tile in self.tile_list:
             if tile.id is not None:         # Pokud je tile.id nějaký z pokladů
                 texture = self.treasures[tile.id]
@@ -361,66 +360,60 @@ class MyGame(arcade.Window):
                     "position": treasure_coords
                 }
         
-        pprint.pprint(self.current_treasure_positions)
+        pprint.pprint(self.current_treasure_positions)  # zas pouze pro kontrolu v terminálu
 
     def treasure_goal(self):
         """Vygenerování seznamu pokladů pro každého hráče, jen při spuštění"""
         self.player_treasures_dict = {}
-        first_current_treasure_positions = self.current_treasure_positions
+        first_current_treasure_positions = self.current_treasure_positions  # prvotní stav pokladů, pro kontrolu
         for player in range(len(self.players)):
             current_player_color = self.player_colors[player]
             current_color_name = self.player_color_names[current_player_color]
             player_name = f"Player {current_color_name}"
             self.player_treasures_dict[player_name] = []
             counter = 0
-            while counter < 6:
+            while counter < 6:  # přiřazení 6 pokladů každému hráči
                 counter += 1
                 treasure_name = random.choice(list(first_current_treasure_positions))
                 treasure = first_current_treasure_positions.pop(treasure_name)
                 print(treasure)
                 self.player_treasures_dict[player_name].append(treasure)
-        pprint.pprint(self.player_treasures_dict)
-        print(self.player_treasures_dict["Player Red"])
+        pprint.pprint(self.player_treasures_dict)   # zas kontrola
     
     def update_treasure_position(self):
-        # Check if player treasures have been assigned
-        if self.player_treasures_dict:
-            # Loop through each player
+        # Updatování vlastností pokladů při posunu deskou
+        if self.player_treasures_dict:  # teoreticky by neměla nastat situace, kdy neexistuje
+            # Každý hráč
             for player in range(len(self.players)):
                 current_player_color = self.player_colors[player]
                 current_color_name = self.player_color_names[current_player_color]
                 player_name = f"Player {current_color_name}"
                 treasures = self.player_treasures_dict[player_name]
-                for index, treasure in enumerate(treasures):
+                for index, treasure in enumerate(treasures):    # index = pozice v listu, treasure = jednotlivý poklad
                     texture = treasure["texture"]
-                    for treasure_id, treasure_info in self.current_treasure_positions.items():
-                        if treasure_info['texture'] == texture:
-                            new_position = treasure_info['position']
-                            #if new_position != self.player_treasures_dict[player_name][index]['position']:
-                            self.player_treasures_dict[player_name][index]['position'] = new_position
-                            print(f"Updated {treasure_id} for {player_name} to new position: {new_position}")
-                            break  # Exit the loop once the match is found
-
-        print(self.player_treasures_dict["Player Red"])
+                    for treasure_id, treasure_info in self.current_treasure_positions.items():  # treasure_id = index pokladu (treasure_24...), treasure_info = položka v seznamu
+                        if treasure_info["texture"] == texture: # Pokud jsou shodné
+                            new_position = treasure_info["position"]    # přendání na nové souřadnice
+                            self.player_treasures_dict[player_name][index]["position"] = new_position
+                            print(f"Updated {treasure_id} for {player_name} to new position: {new_position}")   # pro kontrolu
+                            break  # Nemusím dál hledat
 
     def update_target_treasure(self):
-        # Get the current player name
+        """Změnění textury, aby bylo vidět v programu, co se hledá"""
+        # Jméno aktuálního hráče
         current_player_color = self.player_colors[self.active_player_index]
         current_color_name = self.player_color_names[current_player_color]
         player_name = f"Player {current_color_name}"
 
-        # Get the player's treasure list
+        # Jeho seznam pokladů
         player_treasures = self.player_treasures_dict[player_name]
 
-        # Check if the player has treasures left
+        # Kontrola, jestli má ještě co sbírat
         if player_treasures:
-            # Get the texture of the first treasure in the list (the one they are seeking)
-            treasure_texture = player_treasures[0]['texture']
-            # Update the sprite's texture
-            self.target_treasure_sprite.texture = arcade.load_texture(treasure_texture)
-            # Set the sprite's angle to 0 to keep it at the default angle
-            self.target_treasure_sprite.angle = 0
-        else:
+            treasure_texture = player_treasures[0]["texture"]   # hledaná textura
+            self.target_treasure_sprite.texture = arcade.load_texture(treasure_texture) # náležité updatování spritu
+            self.target_treasure_sprite.angle = 0 # úhel není důležitý
+        else:   # má sebráno vše, musí dojít domů
             if current_color_name == "Red":
                 self.target_treasure_sprite.texture = arcade.load_texture("labkarta_0red.png")
                 self.target_treasure_sprite.angle = 90
@@ -435,8 +428,9 @@ class MyGame(arcade.Window):
                 self.target_treasure_sprite.angle = 180
     
     def setup(self):
+        """Tvoření tlačítek,..."""
         # Tlačítko na otočení extra karty
-        button = TextButton(SCREEN_WIDTH - DISTANCE_BORDER, SCREEN_HEIGHT - 1.5*DISTANCE_BORDER, 100,25,"Rotate", self.on_button_click)
+        button = TextButton(1150,SCREEN_HEIGHT // 2 - 75 , 100,25," ", self.on_button_click)
         self.button_list.append(button)
         # Přidání tlačítek na levou stranu
         for i in range(3):
@@ -458,45 +452,51 @@ class MyGame(arcade.Window):
             button = TextButton(DISTANCE_BORDER + (i * 2 + 1) * 100, DISTANCE_BORDER // 3, 50, 50, "↑", self.on_button_click)
             self.button_list.append(button)
 
-        self.update_target_treasure()
+        self.update_target_treasure()   # aby již při prvním kole hráč věděl, co sbírat
 
-    def get_player_grid_position(self, player):
+    def get_player_grid_position(self, player): 
+        """Získání souřadnic hráče"""
         grid_x = int((player.center_x - DISTANCE_BORDER) // TILE_SIZE)
         grid_y = int((player.center_y - DISTANCE_BORDER) // TILE_SIZE)
         return grid_x, grid_y
 
     def check_for_treasure(self):
-        # Get the active player
+        """Jestli hráč stojí na hledaném pokladu"""
+        # Aktuální hráč
         active_player = self.players[self.active_player_index]
-        
-        # Calculate the player's current grid position
-        grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
-        grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-        
-        # Get the player's name
+        grid_x, grid_y = self.get_player_grid_position(active_player)   # jeho souřadnice
         current_player_color = self.player_colors[self.active_player_index]
         current_color_name = self.player_color_names[current_player_color]
         player_name = f"Player {current_color_name}"
         
-        # Get the list of treasures assigned to the active player
+        # Jeho seznam pokladů
         player_treasures = self.player_treasures_dict[player_name]
 
-        # Check if the player is on the searched treasure
+        # Kontrola, jestli stojí na pokladu
         if player_treasures:    # Pokud seznam není prázdný
-            # Assuming the first treasure in the list is the one being searched for
-            searched_treasure = player_treasures[0]  # You can adjust this if needed
-            treasure_position = searched_treasure['position']
+            searched_treasure = player_treasures[0]  # Hledaný poklad je na nulté pozici v seznamu
+            treasure_position = searched_treasure["position"]
 
-            # Check if the player's position matches the treasure's position
+            # Jestli jsou souřadnice stejné
             if (grid_x, grid_y) == treasure_position:
                 print("Treasure Collected!")
-                # Remove the collected treasure from the player's list
+                # Odeber poklad se seznamu
                 self.player_treasures_dict[player_name].pop(0)
-                # Add further logic like awarding points or progressing the game
             else:
                 print("No treasure at the current position.")
-        else:
-            print("Player must return to starting position")
+        
+        else: # Má sebrány všechny poklady
+            starting_position = STARTING_POSITIONS[self.active_player_index]
+            if (active_player.center_x, active_player.center_y) == starting_position:
+                print(f"{player_name} won!")
+
+                # Vytvoření a zobrazení vyskakovacího okna s "Konec hry"
+                root = tk.Tk()
+                root.withdraw()  # Skryje hlavní okno tkinter
+                messagebox.showinfo("Konec hry", f"{player_name} vyhrál!")
+                root.destroy()  # Ukončí tkinter po zavření okna
+            else:
+                print("Player must return to starting position")
 
     def update_player_opacity(self):
         """Zprůhlednění neaktivních hráčů, aby bylo vidět, na čem stojí"""
@@ -506,39 +506,55 @@ class MyGame(arcade.Window):
             else:
                 player.alpha = 170  # Cca napůl průhledné
 
+    def show_invalid_shift_message(self, entity, index, attempted_direction, last_direction):
+        """Zobrazení upozornění na neplatný tah s detaily tahu"""
+        message = (
+            f"Nemůžete posunout {entity} {index} směrem {attempted_direction}, protože byl právě posunut směrem {last_direction}."
+        )
+        messagebox.showwarning("Neplatný tah", message)
+
     def shift_grid(self, entity, index, direction): #entity = row/column; index číslo řádku/sloupce, direction up/down/left/right
-        if self.last_shift:     # Pokud to není první
+        """Posun hrací deskou"""
+        if self.last_shift:     # Pokud to není první, jinak neexistuje žádná podmínka
             last_entity, last_index, last_direction = self.last_shift
 
             # Zabránění hráči aby táhl proti předchozímu tahu
             if entity == last_entity and index == last_index: #pokud je to row a row, 2 a 2
-                if (last_direction == 'right' and direction == 'left') or (last_direction == 'left' and direction == 'right'): # pokud je směr doprava a doleva nebo obráceně
+                if (last_direction == "right" and direction == "left") or (last_direction == "left" and direction == "right"): # pokud je směr doprava a doleva nebo obráceně
                     print(f"Cannot shift {entity} {index} to the {direction}, it was just shifted to the {last_direction}.")
-                    return
-                if (last_direction == 'up' and direction == 'down') or (last_direction == 'down' and direction == 'up'):        # pokud je směr nahoru a dolů nebo obráceně
+                    if last_direction == "right":
+                        self.show_invalid_shift_message(entity="řádek", index=index,attempted_direction= "doprava", last_direction= "doleva" )
+                    else:
+                        self.show_invalid_shift_message(entity="řádek", index=index,attempted_direction= "doleva", last_direction= "doprava" )
+                    return # pokud ano, okamžitě ukonči shift_grid
+                if (last_direction == "up" and direction == "down") or (last_direction == "down" and direction == "up"):        # pokud je směr nahoru a dolů nebo obráceně
                     print(f"Cannot shift {entity} {index} to the {direction}, it was just shifted to the {last_direction}.")
+                    if last_direction == "up":
+                        self.show_invalid_shift_message(entity = "sloupec", index = index,attempted_direction= "nahoru", last_direction= "dolů" )
+                    else:
+                        self.show_invalid_shift_message(entity = "sloupec", index = index,attempted_direction= "dolů", last_direction= "nahoru" )
                     return
 
-        if entity == 'row':
+        if entity == "row":
             """Aktualizace při pohybu s řadou"""
             row = index - 1 #Odečtení kvůli indexování (souřadnice (2,2) v py == (1,1)...)
-            if direction == 'right': #Zprava
-                self.shift_row_right(row)
-            elif direction == 'left': #Zleva
-                self.shift_row_left(row)
+            if direction == "right": #Zprava
+                self.shift_row_from_right(row)
+            elif direction == "left": #Zleva
+                self.shift_row_from_left(row)
 
             # Kontrola pohybu hráče s dílem
             for player in self.players:
                 player_grid_x, player_grid_y = self.get_player_grid_position(player)
                 if player_grid_y == row: # Pokud je hráč v řadě
-                    if direction == 'right':
+                    if direction == "right":
                         # Jestliže se hýbalo zprava
                         if player.center_x == DISTANCE_BORDER:  # Je na levém kraji → přesun na pravý kraj
                             player.center_x = DISTANCE_BORDER + (GRID_SIZE -1) * TILE_SIZE
                             print(player.center_x)
                         else:
                             player.center_x -= TILE_SIZE  # Jinak jen posun o díl doleva
-                    elif direction == 'left':
+                    elif direction == "left":
                         # Jestliže se hýbalo zleva
                         if player.center_x == DISTANCE_BORDER + (GRID_SIZE -1) * TILE_SIZE :  # Na pravém kraji
                             player.center_x = DISTANCE_BORDER  # Wrap to the rightmost tile
@@ -547,25 +563,25 @@ class MyGame(arcade.Window):
                 else:
                     pass
 
-        elif entity == 'column':
+        elif entity == "column":
             """Aktualizace při pohybu se sloupcem"""
             col = index - 1
-            if direction == 'down':
-                self.shift_column_down(col)
-            elif direction == 'up':
-                self.shift_column_up(col)
+            if direction == "down":
+                self.shift_column_from_up(col)
+            elif direction == "up":
+                self.shift_column_from_up(col)
             
             # Kontrola pohybu hráče s dílem
             for player in self.players:
                 player_grid_x, player_grid_y = self.get_player_grid_position(player)
                 if player_grid_x == col:  # Hráč je v šoupnutém sloupci
-                    if direction == 'down':
+                    if direction == "down":
                         # Zdola
                         if player.center_y == DISTANCE_BORDER  + (GRID_SIZE - 1) * TILE_SIZE:  # Pokud je na horním, dej ho dolů
                             player.center_y = DISTANCE_BORDER
                         else:
                             player.center_y += TILE_SIZE  # Jinak popojde nahoru
-                    elif direction == 'up':
+                    elif direction == "up":
                         # Shora
                         if player.center_y == DISTANCE_BORDER:  # Je na dolním, dej ho nahoru
                             player.center_y = DISTANCE_BORDER + (GRID_SIZE - 1) * TILE_SIZE 
@@ -577,7 +593,7 @@ class MyGame(arcade.Window):
         self.get_treasure_coords()  # Aktualizace pozic pokladů
         self.update_treasure_position()
             
-    def shift_row_right(self, row_index):   # Pro shift z nějakého důvodu nefunguje třeba extra_tile_sprite.texture,...        
+    def shift_row_from_right(self, row_index):   # Pro shift z nějakého důvodu nefunguje třeba extra_tile_sprite.texture,...        
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
         extra_tile_properties = self.tile_positions[(10, 6)].copy()  # Kopírování extra tile properties
         extra_tile_sprite = self.tile_list[-1]
@@ -640,7 +656,7 @@ class MyGame(arcade.Window):
 
         extra_tile_sprite.id = pushed_out_id
 
-    def shift_row_left(self, row_index):
+    def shift_row_from_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
         extra_tile_properties = self.tile_positions[(10, 6)].copy()
         extra_tile_sprite = self.tile_list[-1]
@@ -698,7 +714,7 @@ class MyGame(arcade.Window):
         
         extra_tile_sprite.id = pushed_out_id
 
-    def shift_column_up(self, col_index):           
+    def shift_column_from_up(self, col_index):           
         """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6]  """
         extra_tile_properties = self.tile_positions[(10, 6)].copy()
         extra_tile_sprite = self.tile_list[-1]
@@ -757,7 +773,7 @@ class MyGame(arcade.Window):
 
         extra_tile_sprite.id = pushed_out_id
      
-    def shift_column_down(self, col_index):           
+    def shift_column_from_up(self, col_index):           
         """Šoupání zespoda, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
         extra_tile_properties = self.tile_positions[(10, 6)].copy()
         extra_tile_sprite = self.tile_list[-1]
@@ -829,10 +845,52 @@ class MyGame(arcade.Window):
         
         self.target_treasure_sprite.draw()
 
-        # Text
+        # Text, kdo hraje
         current_player_color = self.player_colors[self.active_player_index]
         current_color_name = self.player_color_names[current_player_color]
-        arcade.draw_text(f"Now plays {current_color_name} player", SCREEN_WIDTH - 2* DISTANCE_BORDER,SCREEN_HEIGHT - 2* DISTANCE_BORDER, current_player_color , 20, font_name="Calibri")
+        arcade.draw_text(f"Now plays {current_color_name} player",950,825, current_player_color , 20, font_name="Impact")
+        arcade.draw_text("Hledaný cíl:",950,775, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("Sebráno:",950,730, arcade.color.BLACK, 14, font_name="Arial")
+       
+        #zbývá pokladů
+        player_name = f"Player {current_color_name}"
+        player_treasures_left = 6 - len(self.player_treasures_dict[player_name])
+        arcade.draw_text(f"{player_treasures_left} / 6",960,705, arcade.color.BLACK, 14, font_name="Arial")
+        
+        # Herní statistiky
+        arcade.draw_text("Herní statistiky",950,650, arcade.color.BLACK, 20, font_name="Impact")
+        ## Červený
+        red_player_color = self.player_colors[0]
+        red_player_color_name = self.player_color_names[red_player_color]
+        arcade.draw_text("Hráč 1",950,620,red_player_color, 14, font_name="Arial")
+        red_player_name = f"Player {red_player_color_name}"
+        red_treasures_left = 6 - len(self.player_treasures_dict[red_player_name])
+        arcade.draw_text(f"{red_treasures_left} / 6",960,595, arcade.color.BLACK, 14, font_name="Arial")
+        ## Modrý
+        blue_player_color = self.player_colors[1]
+        blue_player_color_name = self.player_color_names[blue_player_color]
+        arcade.draw_text("Hráč 2",1025,620,blue_player_color, 14, font_name="Arial")
+        blue_player_name = f"Player {blue_player_color_name}"
+        blue_treasures_left = 6 - len(self.player_treasures_dict[blue_player_name])
+        arcade.draw_text(f"{blue_treasures_left} / 6",1035,595, arcade.color.BLACK, 14, font_name="Arial")
+        ## Zelený
+        green_player_color = self.player_colors[2]
+        green_player_color_name = self.player_color_names[green_player_color]
+        arcade.draw_text("Hráč 3",1100,620,green_player_color, 14, font_name="Arial")
+        green_player_name = f"Player {green_player_color_name}"
+        green_treasures_left = 6 - len(self.player_treasures_dict[green_player_name])
+        arcade.draw_text(f"{green_treasures_left} / 6",1110,595, arcade.color.BLACK, 14, font_name="Arial")
+        ## Žlutý
+        yellow_player_color = self.player_colors[3]
+        yellow_player_color_name = self.player_color_names[yellow_player_color]
+        arcade.draw_text("Hráč 4",1175,620,yellow_player_color, 14, font_name="Arial")
+        yellow_player_name = f"Player {yellow_player_color_name}"
+        yellow_treasures_left = 6 - len(self.player_treasures_dict[yellow_player_name])
+        arcade.draw_text(f"{yellow_treasures_left} / 6",1185,595, arcade.color.BLACK, 14, font_name="Arial")
+        
+        # Extra díl
+        arcade.draw_text("Vysunutá karta:",950,475, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("ROTATE",1110,364, arcade.color.BLACK, 20, font_name="Impact")
 
     def update(self, delta_time):
         self.tile_list.update()
@@ -850,20 +908,20 @@ class MyGame(arcade.Window):
     
     def get_tile_under_player(self, player):
         """Vrací pozici a vlastnosti dílu pod hráčem"""
-        grid_x = int(player.center_x - DISTANCE_BORDER) // TILE_SIZE
-        grid_y = int(player.center_y - DISTANCE_BORDER) // TILE_SIZE
+        active_player = self.players[self.active_player_index]
+        grid_x, grid_y = self.get_player_grid_position(active_player)
 
         tile_position = (grid_x, grid_y)
         return self.tile_positions.get(tile_position)       # z dict s pozicemi vrací konkrétní souřadnice
     
     def get_adjacent_tile(self,current_tile_position, direction):
-        if direction == 'up':
+        if direction == "up":
             adjacent_position = (current_tile_position[0], current_tile_position[1] + 1)
-        elif direction == 'down':
+        elif direction == "down":
             adjacent_position = (current_tile_position[0], current_tile_position[1] - 1)
-        elif direction == 'left':
+        elif direction == "left":
             adjacent_position = (current_tile_position[0] - 1, current_tile_position[1])
-        elif direction == 'right':
+        elif direction == "right":
             adjacent_position = (current_tile_position[0] + 1, current_tile_position[1])
         return self.tile_positions.get(adjacent_position,None)  # none pokud jinde nic není
 
@@ -880,7 +938,7 @@ class MyGame(arcade.Window):
                 if tile_under_player["move_up"]:      #pokud je move up true (nahoru vede cesta)
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'up')      #získá info o dílu nad
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), "up")      #získá info o dílu nad
                     if adjacent_tile and adjacent_tile["move_down"]:           # pokud nad ním existuje a vede z ní cesta dolů
                         active_player.center_y += MOVEMENT_SPEED
                     else:
@@ -892,7 +950,7 @@ class MyGame(arcade.Window):
                 if tile_under_player["move_down"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'down')
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), "down")
                     if adjacent_tile and adjacent_tile["move_up"]:
                         active_player.center_y -= MOVEMENT_SPEED
                     else:
@@ -903,7 +961,7 @@ class MyGame(arcade.Window):
                 if tile_under_player["move_left"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'left')
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), "left")
                     if adjacent_tile and adjacent_tile["move_right"]:
                         active_player.center_x -= MOVEMENT_SPEED
                     else:
@@ -915,7 +973,7 @@ class MyGame(arcade.Window):
                 if tile_under_player["move_right"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
-                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), 'right')
+                    adjacent_tile = self.get_adjacent_tile((grid_x, grid_y), "right")
                     if adjacent_tile and adjacent_tile["move_left"]:
                         active_player.center_x += MOVEMENT_SPEED
                     else:
@@ -946,7 +1004,7 @@ class MyGame(arcade.Window):
         pass
 
     def on_button_click(self, button_label, x, y):
-        if button_label == "Rotate":
+        if button_label == " ":
             self.transform_tile(self.tile_list[-1])
             return  # prevence aby program nepokračoval ve fci (nenastavil has_shifted na true)
 

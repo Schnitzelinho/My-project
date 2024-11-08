@@ -1,0 +1,32 @@
+souřadnice pravý šedý blok:
+center_x = 1100
+center_y = 450
+width = 350
+height = 850
+left = 925
+right = 1275
+top = 875
+bottom = 25
+
+Now plays:
+start_x = 950
+start_y = 825
+
+Hledaný poklad:
+center_x = 1150
+center_y = 750
+
+Extra tile:
+center_x = 1150
+center_y = 450
+Text poklad:
+start_x = 950
+start_y = 745
+Tlačítko otočit:
+center_x = 1150
+center_y = 375
+width = 100
+height = 25
+Text otočit:
+start_x = 1110
+start_y = 364
