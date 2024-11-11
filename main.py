@@ -203,7 +203,7 @@ class MyGame(arcade.Window):
         # Vytvoření extra_tile
         self.extra_tile = None
         self.extra_tile = self.create_extra_tile()
-        self.tile_positions[(10, 3)] = self.extra_tile
+        self.tile_positions[(10, 2)] = self.extra_tile
 
 
         pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
@@ -260,7 +260,7 @@ class MyGame(arcade.Window):
                 move_right = move_up = move_down = True
 
         # Upravení (jen změněných) vlastností na extra tile
-        self.tile_positions[(10, 3)] = {
+        self.tile_positions[(10, 2)] = {
             "name": name,
             "angle": tile.angle,
             "move_right": move_right,
@@ -279,7 +279,7 @@ class MyGame(arcade.Window):
         extra_tile = arcade.Sprite(texture, 1)
         extra_tile.angle = angle
         extra_tile.center_x = SCREEN_WIDTH - DISTANCE_BORDER
-        extra_tile.center_y = SCREEN_HEIGHT //2 
+        extra_tile.center_y = SCREEN_HEIGHT //2 - 10
         
         # Přiřazení vlastností
         move_right = move_left = move_down = move_up = False
@@ -430,8 +430,10 @@ class MyGame(arcade.Window):
     def setup(self):
         """Tvoření tlačítek,..."""
         # Tlačítko na otočení extra karty
-        button = TextButton(1150,SCREEN_HEIGHT // 2 - 75 , 100,25," ", self.on_button_click)
-        self.button_list.append(button)
+        button_rotate = TextButton(1150,SCREEN_HEIGHT // 2 - 85 , 100,25," ", self.on_button_click)
+        self.button_list.append(button_rotate)
+        button_nextplayer = TextButton(1150, 650, 130 , 40, "  ", self.on_button_click)
+        self.button_list.append(button_nextplayer)
         # Přidání tlačítek na levou stranu
         for i in range(3):
             button = TextButton(DISTANCE_BORDER // 3, DISTANCE_BORDER + (i * 2 + 1) * 100, 50, 50, "→", self.on_button_click)
@@ -451,6 +453,7 @@ class MyGame(arcade.Window):
         for i in range(3):
             button = TextButton(DISTANCE_BORDER + (i * 2 + 1) * 100, DISTANCE_BORDER // 3, 50, 50, "↑", self.on_button_click)
             self.button_list.append(button)
+
 
         self.update_target_treasure()   # aby již při prvním kole hráč věděl, co sbírat
 
@@ -595,7 +598,7 @@ class MyGame(arcade.Window):
             
     def shift_row_from_right(self, row_index):   # Pro shift z nějakého důvodu nefunguje třeba extra_tile_sprite.texture,...        
         """Šoupání zprava, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]"""
-        extra_tile_properties = self.tile_positions[(10, 3)].copy()  # Kopírování extra tile properties
+        extra_tile_properties = self.tile_positions[(10, 2)].copy()  # Kopírování extra tile properties
         extra_tile_sprite = self.tile_list[-1]
 
         # Kopírování vlastností levého dílu
@@ -649,7 +652,7 @@ class MyGame(arcade.Window):
 
 
         # Vezme vlastnosti první a dá je do extra tile (ještě nepřepsané)
-        self.tile_positions[(10, 3)] = pushed_out_tile_properties
+        self.tile_positions[(10, 2)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -658,7 +661,7 @@ class MyGame(arcade.Window):
 
     def shift_row_from_left(self, row_index):
         """Šoupání zleva, mění se pouze sloupec, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6] """
-        extra_tile_properties = self.tile_positions[(10, 3)].copy()
+        extra_tile_properties = self.tile_positions[(10, 2)].copy()
         extra_tile_sprite = self.tile_list[-1]
 
         # Kopíruj vlastnosti krajní pravé karty
@@ -707,7 +710,7 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = None
 
         # Dej vlasnosti extra_tile vysunuté kartě
-        self.tile_positions[(10, 3)] = pushed_out_tile_properties
+        self.tile_positions[(10, 2)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -716,7 +719,7 @@ class MyGame(arcade.Window):
 
     def shift_column_from_up(self, col_index):           
         """Šoupání zhora, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [extra_tile, T1, T2, T3, T4, T5, T6]  """
-        extra_tile_properties = self.tile_positions[(10, 3)].copy()
+        extra_tile_properties = self.tile_positions[(10, 2)].copy()
         extra_tile_sprite = self.tile_list[-1]
 
         # Vem vlastnosti nejspodnější karty
@@ -765,7 +768,7 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = None
 
         # Přidej vlastnosti extra_tile vysunuté
-        self.tile_positions[(10, 3)] = pushed_out_tile_properties
+        self.tile_positions[(10, 2)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -775,7 +778,7 @@ class MyGame(arcade.Window):
      
     def shift_column_from_down(self, col_index):           
         """Šoupání zespoda, mění se pouze řádek, [T1, T2, T3, T4, T5, T6, T7] → [T2, T3, T4, T5, T6, T7, extra_tile]  """
-        extra_tile_properties = self.tile_positions[(10, 3)].copy()
+        extra_tile_properties = self.tile_positions[(10, 2)].copy()
         extra_tile_sprite = self.tile_list[-1]
 
         # Kopíruj vlastnosti nejhornější karty
@@ -823,7 +826,7 @@ class MyGame(arcade.Window):
                     current_tile_sprite.id = None
 
         # Vlastnosti vysunuté předej extra_tile
-        self.tile_positions[(10, 3)] = pushed_out_tile_properties
+        self.tile_positions[(10, 2)] = pushed_out_tile_properties
         self.tile_list[-1].texture = pushed_out_texture
         self.tile_list[-1].angle = pushed_out_angle
         self.tile_list[-1].my_texture_name = pushed_out_texture_name
@@ -860,6 +863,7 @@ class MyGame(arcade.Window):
             barva_hrace = "zelený"
         else:
             barva_hrace = "žlutý"
+
         arcade.draw_text(f"Na řadě je {barva_hrace} hráč",950,825, current_player_color , 20, font_name="Impact")
         arcade.draw_text("Hledaný cíl:",950,775, arcade.color.BLACK, 14, font_name="Arial")
         arcade.draw_text("Sebráno:",950,730, arcade.color.BLACK, 14, font_name="Arial")
@@ -869,40 +873,54 @@ class MyGame(arcade.Window):
         player_treasures_left = 6 - len(self.player_treasures_dict[player_name])
         arcade.draw_text(f"{player_treasures_left} / 6",960,705, arcade.color.BLACK, 14, font_name="Arial")
         
+        # Další hráč text
+        arcade.draw_text("DALŠÍ HRÁČ", 1088,639, arcade.color.BLACK,20, font_name="Impact")
         # Herní statistiky
-        arcade.draw_text("Herní statistiky",950,650, arcade.color.BLACK, 20, font_name="Impact")
+        arcade.draw_text("Herní statistiky",950,570, arcade.color.BLACK, 20, font_name="Impact")
         ## Červený
         red_player_color = self.player_colors[0]
         red_player_color_name = self.player_color_names[red_player_color]
-        arcade.draw_text("Hráč 1",950,620,red_player_color, 14, font_name="Arial")
+        arcade.draw_text("Hráč 1",950,540,red_player_color, 14, font_name="Arial")
         red_player_name = f"Player {red_player_color_name}"
         red_treasures_left = 6 - len(self.player_treasures_dict[red_player_name])
-        arcade.draw_text(f"{red_treasures_left} / 6",960,595, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text(f"{red_treasures_left} / 6",960,515, arcade.color.BLACK, 14, font_name="Arial")
         ## Modrý
         blue_player_color = self.player_colors[1]
         blue_player_color_name = self.player_color_names[blue_player_color]
-        arcade.draw_text("Hráč 2",1025,620,blue_player_color, 14, font_name="Arial")
+        arcade.draw_text("Hráč 2",1025,540,blue_player_color, 14, font_name="Arial")
         blue_player_name = f"Player {blue_player_color_name}"
         blue_treasures_left = 6 - len(self.player_treasures_dict[blue_player_name])
-        arcade.draw_text(f"{blue_treasures_left} / 6",1035,595, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text(f"{blue_treasures_left} / 6",1035,515, arcade.color.BLACK, 14, font_name="Arial")
         ## Zelený
         green_player_color = self.player_colors[2]
         green_player_color_name = self.player_color_names[green_player_color]
-        arcade.draw_text("Hráč 3",1100,620,green_player_color, 14, font_name="Arial")
+        arcade.draw_text("Hráč 3",1100,540,green_player_color, 14, font_name="Arial")
         green_player_name = f"Player {green_player_color_name}"
         green_treasures_left = 6 - len(self.player_treasures_dict[green_player_name])
-        arcade.draw_text(f"{green_treasures_left} / 6",1110,595, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text(f"{green_treasures_left} / 6",1110,515, arcade.color.BLACK, 14, font_name="Arial")
         ## Žlutý
         yellow_player_color = self.player_colors[3]
         yellow_player_color_name = self.player_color_names[yellow_player_color]
-        arcade.draw_text("Hráč 4",1175,620,yellow_player_color, 14, font_name="Arial")
+        arcade.draw_text("Hráč 4",1175,540,yellow_player_color, 14, font_name="Arial")
         yellow_player_name = f"Player {yellow_player_color_name}"
         yellow_treasures_left = 6 - len(self.player_treasures_dict[yellow_player_name])
-        arcade.draw_text(f"{yellow_treasures_left} / 6",1185,595, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text(f"{yellow_treasures_left} / 6",1185,515, arcade.color.BLACK, 14, font_name="Arial")
         
         # Extra díl
-        arcade.draw_text("Vysunutá karta:",950,475, arcade.color.BLACK, 14, font_name="Arial")
-        arcade.draw_text("ROTUJ",1116,364, arcade.color.BLACK, 20, font_name="Impact")
+        arcade.draw_text("Vysunutá karta:",950,465, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("ROTUJ",1116,354, arcade.color.BLACK, 20, font_name="Impact")
+
+        # Pravidla
+        arcade.draw_text("Pravidla", 950, 305, arcade.color.BLACK, 20, font_name="Impact" )
+        arcade.draw_text("CÍL HRY: ",950,275, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("Posbírej všechny své poklady",960,250, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("a dostaň se zpět na svůj start.",960,225, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("OVLÁDÁNÍ: ",950,190, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("1. Vlož vysunutou kartu šipkami",960,165, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("2. Jdi pomocí WSAD nebo šipek",960,140, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("3. Ukonči tah na svém pokladu",960,115, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("Nelze táhnout proti minulému tahu.",950,70, arcade.color.BLACK, 14, font_name="Arial")
+        arcade.draw_text("Poklad sebereš přepnutím hráče.",950,45, arcade.color.BLACK, 14, font_name="Arial")
 
     def update(self, delta_time):
         self.tile_list.update()
@@ -946,7 +964,7 @@ class MyGame(arcade.Window):
             self.get_treasure_coords()
 
         if self.has_shifted:
-            if key == arcade.key.UP:
+            if key == arcade.key.W or key == arcade.key.UP:
                 if tile_under_player["move_up"]:      #pokud je move up true (nahoru vede cesta)
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
@@ -958,7 +976,7 @@ class MyGame(arcade.Window):
                 else:
                     print("Cannot move up")
                 
-            elif key == arcade.key.DOWN:
+            elif key == arcade.key.S or key == arcade.key.DOWN:
                 if tile_under_player["move_down"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
@@ -969,7 +987,7 @@ class MyGame(arcade.Window):
                         print("Cannot move down")                        
                 else:
                     print("Cannot move down")
-            elif key == arcade.key.LEFT:
+            elif key == arcade.key.A or key == arcade.key.LEFT:
                 if tile_under_player["move_left"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
@@ -981,7 +999,7 @@ class MyGame(arcade.Window):
                 else:
                     print("Cannot move left")
 
-            elif key == arcade.key.RIGHT:
+            elif key == arcade.key.D or key == arcade.key.RIGHT:
                 if tile_under_player["move_right"]:
                     grid_x = int((active_player.center_x - DISTANCE_BORDER) // TILE_SIZE)
                     grid_y = int((active_player.center_y - DISTANCE_BORDER) // TILE_SIZE)
@@ -1004,9 +1022,6 @@ class MyGame(arcade.Window):
                 self.update_target_treasure()
                 # Změnění průhlednosti pro lepší viditelnost
                 self.update_player_opacity()
-
-                #pprint.pprint(self.tile_positions)
-                print(tile_under_player)
                 
         else:
             print("Player must shift first")
@@ -1019,6 +1034,20 @@ class MyGame(arcade.Window):
         if button_label == " ":
             self.transform_tile(self.tile_list[-1])
             return  # prevence aby program nepokračoval ve fci (nenastavil has_shifted na true)
+        
+        if button_label == "  ":
+            if self.has_shifted:
+                # Konec kola
+                self.has_shifted = False
+                    
+                # Kontrola, jestli stojí na hledaném pokladu
+                self.check_for_treasure()
+                    
+                # Přepnutí na dalšího hráče
+                self.active_player_index = (self.active_player_index + 1) % len(self.players) 
+                self.update_target_treasure()
+                # Změnění průhlednosti pro lepší viditelnost
+                self.update_player_opacity()
 
         if not self.has_shifted:        # pokud hráč ještě nepohnul
             if button_label == "←":
