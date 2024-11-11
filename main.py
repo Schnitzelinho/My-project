@@ -1090,4 +1090,4 @@ if __name__ == "__main__":
     window.setup()
     arcade.run()
 
-"""DODĚLAT SAMOTNÝ SBĚR, GUI """
+"""Vytvořit aplikaci"""
