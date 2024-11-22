@@ -64,7 +64,7 @@ class MyGame(arcade.Window):
         # Nastavení barvy pozadí
         arcade.set_background_color(arcade.color.COBALT)    #nebo NAVY_BLUE?
  
-        #Držení spritů (zákl. grafický jednotky), atd.
+        #Držení spritů (zákl. grafické jednotky), atd.
         self.tile_list = arcade.SpriteList()
         self.players = []       
         self.active_player_index = 0
@@ -908,7 +908,7 @@ class MyGame(arcade.Window):
         
         # Extra díl
         arcade.draw_text("Vysunutá karta:",950,465, arcade.color.BLACK, 14, font_name="Arial")
-        arcade.draw_text("ROTUJ",1116,354, arcade.color.BLACK, 20, font_name="Impact")
+        arcade.draw_text("ROTUJ",1116,355, arcade.color.BLACK, 20, font_name="Impact")
 
         # Pravidla
         arcade.draw_text("Pravidla", 950, 305, arcade.color.BLACK, 20, font_name="Impact" )
