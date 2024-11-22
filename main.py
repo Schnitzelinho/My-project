@@ -471,7 +471,15 @@ class MyGame(arcade.Window):
         current_player_color = self.player_colors[self.active_player_index]
         current_color_name = self.player_color_names[current_player_color]
         player_name = f"Player {current_color_name}"
-        
+        if current_color_name == "Red":
+            barva_hrace = "červený"
+        elif current_color_name == "Blue":
+            barva_hrace = "modrý"
+        elif current_color_name == "Green":
+            barva_hrace = "zelený"
+        else:
+            barva_hrace = "žlutý"
+
         # Jeho seznam pokladů
         player_treasures = self.player_treasures_dict[player_name]
 
@@ -496,7 +504,7 @@ class MyGame(arcade.Window):
                 # Vytvoření a zobrazení vyskakovacího okna s "Konec hry"
                 root = tk.Tk()
                 root.withdraw()  # Skryje hlavní okno tkinter
-                messagebox.showinfo("Konec hry", f"{player_name} vyhrál!")
+                messagebox.showinfo("Konec hry", f"{barva_hrace} hráč vyhrál!")
                 root.destroy()  # Ukončí tkinter po zavření okna
             else:
                 print("Player must return to starting position")
