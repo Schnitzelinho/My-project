@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-import arcade, random, pprint
+import arcade, random
 
 import arcade.color
 
@@ -69,11 +69,13 @@ class MyGame(arcade.Window):
         self.players = []       
         self.active_player_index = 0
         self.has_shifted = False
+        self.game_over = False
         self.last_shift = None
         self.tile_positions = {}
         self.button_list = []
         self.treasures = {} #dictionary s poklady
         self.current_treasure_positions = {}
+        
         tile_id_counter = 0 #pro přiřazení ID všem pokladům
 
         # Co aktuální hráč hledá
@@ -205,8 +207,6 @@ class MyGame(arcade.Window):
         self.extra_tile = self.create_extra_tile()
         self.tile_positions[(10, 2)] = self.extra_tile
 
-
-        pprint.pprint(self.tile_positions)  # Vytisknutí slovníku se všemi informacemi o všech dílech
         # Prvotní spuštění fcí (získání souřadnic všech pokladů, přiřazení hráčům)
         self.get_treasure_coords()
         self.treasure_goal()    
@@ -359,8 +359,6 @@ class MyGame(arcade.Window):
                     "texture": texture,
                     "position": treasure_coords
                 }
-        
-        pprint.pprint(self.current_treasure_positions)  # zas pouze pro kontrolu v terminálu
 
     def treasure_goal(self):
         """Vygenerování seznamu pokladů pro každého hráče, jen při spuštění"""
@@ -372,13 +370,12 @@ class MyGame(arcade.Window):
             player_name = f"Player {current_color_name}"
             self.player_treasures_dict[player_name] = []
             counter = 0
-            while counter < 6:  # přiřazení 6 pokladů každému hráči
+            while counter < 1:  # přiřazení 6 pokladů každému hráči
                 counter += 1
                 treasure_name = random.choice(list(first_current_treasure_positions))
                 treasure = first_current_treasure_positions.pop(treasure_name)
                 print(treasure)
                 self.player_treasures_dict[player_name].append(treasure)
-        pprint.pprint(self.player_treasures_dict)   # zas kontrola
     
     def update_treasure_position(self):
         # Updatování vlastností pokladů při posunu deskou
@@ -506,6 +503,7 @@ class MyGame(arcade.Window):
                 root.withdraw()  # Skryje hlavní okno tkinter
                 messagebox.showinfo("Konec hry", f"{barva_hrace} hráč vyhrál!")
                 root.destroy()  # Ukončí tkinter po zavření okna
+                self.game_over = True
             else:
                 print("Player must return to starting position")
 
@@ -526,6 +524,10 @@ class MyGame(arcade.Window):
 
     def shift_grid(self, entity, index, direction): #entity = row/column; index číslo řádku/sloupce, direction up/down/left/right
         """Posun hrací deskou"""
+        if self.game_over:  # Zkontrolujte, zda je hra ukončena
+            print("Game over. No more playing.")
+            return
+        
         if self.last_shift:     # Pokud to není první, jinak neexistuje žádná podmínka
             last_entity, last_index, last_direction = self.last_shift
 
@@ -1039,6 +1041,9 @@ class MyGame(arcade.Window):
         pass
 
     def on_button_click(self, button_label, x, y):
+        if self.game_over:
+            print("Game over. No more playing.")
+            return
         if button_label == " ":
             self.transform_tile(self.tile_list[-1])
             return  # prevence aby program nepokračoval ve fci (nenastavil has_shifted na true)
